@@ -15,7 +15,7 @@ using System.Windows;
 using System.Reflection;
 using libMBIN.NMS;
 
-namespace NMSPlugin
+namespace NibbleNMSPlugin
 {
     public static class Util
     {

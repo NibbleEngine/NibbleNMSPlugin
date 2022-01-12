@@ -3,7 +3,7 @@ using NbCore;
 using NbCore.Common;
 
 
-namespace NMSPlugin
+namespace NibbleNMSPlugin
 {
     public static class NMSExporter
     {

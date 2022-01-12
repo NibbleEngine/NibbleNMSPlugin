@@ -12,7 +12,7 @@ using System.IO;
 using libMBIN.NMS.Toolkit;
 using NbCore;
 
-namespace NMSPlugin
+namespace NibbleNMSPlugin
 {
     public class ModelProcGen
     {

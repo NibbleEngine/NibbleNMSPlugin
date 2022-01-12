@@ -9,7 +9,7 @@ using ImGuiNET;
 using Newtonsoft.Json;
 using System.Linq;
 
-namespace NMSPlugin
+namespace NibbleNMSPlugin
 {
     public class NMSPluginSettings : PluginSettings
     {

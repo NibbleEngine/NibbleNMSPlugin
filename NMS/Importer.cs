@@ -19,7 +19,7 @@ using NbCore.Common;
 using Quaternion = OpenTK.Mathematics.Quaternion;
 
 
-namespace NMSPlugin
+namespace NibbleNMSPlugin
 {
     public static class Importer
     {
@@ -194,7 +194,7 @@ namespace NMSPlugin
             for (int i = 0; i < component.LODModel.Count; i++)
             {
                 string filepath = component.LODModel[i].LODModel.Filename;
-                Console.WriteLine("Loading LOD " + filepath);
+                PluginState.PluginRef.Log("Loading LOD " + filepath, LogVerbosityLevel.INFO);
                 SceneGraphNode so = ImportScene(filepath);
                 //Create LOD Resource
                 LODModelResource lodres = new()
@@ -220,7 +220,7 @@ namespace NMSPlugin
                 
                 if (!SupportedComponents.ContainsKey(comp_type))
                 {
-                    Console.WriteLine("Unsupported Component Type " + comp_type);
+                    PluginState.PluginRef.Log("Unsupported Component Type " + comp_type, LogVerbosityLevel.INFO);
                     continue;
                 }
                     
@@ -431,7 +431,7 @@ namespace NMSPlugin
                 case (0x8D9F):
                     return NbPrimitiveDataType.Int2101010Rev;
                 default:
-                    Console.WriteLine("Unknown VERTEX SECTION TYPE-----------------------------------");
+                    PluginState.PluginRef.Log("Unknown VERTEX SECTION TYPE-----------------------------------", LogVerbosityLevel.WARNING);
                     throw new ApplicationException("NEW VERTEX SECTION TYPE. FIX IT ASSHOLE...");
                     //return OpenTK.Graphics.OpenGL4.VertexAttribPointerType.UnsignedByte;
             }
@@ -447,7 +447,8 @@ namespace NMSPlugin
                 case (0x1401):
                     return 1;
                 default:
-                    Console.WriteLine("Unknown VERTEX SECTION TYPE-----------------------------------");
+                    PluginState.PluginRef.Log("Unknown VERTEX SECTION TYPE-----------------------------------",
+                        LogVerbosityLevel.INFO);
                     return 1;
             }
         }
@@ -502,7 +503,7 @@ namespace NMSPlugin
             //testfs.Close();
 
             BinaryReader br = new(fs);
-            Console.WriteLine("Parsing Geometry MBIN");
+            PluginState.PluginRef.Log("Parsing Geometry MBIN", LogVerbosityLevel.INFO);
 
             fs.Seek(0x60, SeekOrigin.Begin);
 
@@ -511,10 +512,10 @@ namespace NMSPlugin
             var indices_flag = br.ReadInt32();
             var collision_index_count = br.ReadInt32();
 
-            Console.WriteLine("Model Vertices: {0}", vert_num);
-            Console.WriteLine("Model Indices: {0}", indices_num);
-            Console.WriteLine("Indices Flag: {0}", indices_flag);
-            Console.WriteLine("Collision Index Count: {0}", collision_index_count);
+            PluginState.PluginRef.Log($"Model Vertices: {vert_num}", LogVerbosityLevel.INFO);
+            PluginState.PluginRef.Log($"Model Indices: {indices_num}", LogVerbosityLevel.INFO);
+            PluginState.PluginRef.Log($"Indices Flag: {indices_flag}", LogVerbosityLevel.INFO);
+            PluginState.PluginRef.Log($"Collision Index Count: {collision_index_count}", LogVerbosityLevel.INFO);
 
             //Joint Bindings
             var jointbindingOffset = fs.Position + br.ReadInt32();
@@ -570,7 +571,7 @@ namespace NMSPlugin
 
             var lod_count = br.ReadInt32();
             var vx_type = br.ReadUInt32();
-            Console.WriteLine("Buffer Count: {0} VxType {1}", lod_count, vx_type);
+            PluginState.PluginRef.Log($"Buffer Count: {lod_count} VxType {vx_type}", LogVerbosityLevel.INFO);
             fs.Seek(0x8, SeekOrigin.Current);
             var mesh_descr_offset = fs.Position + br.ReadInt64();
             var buf_count = br.ReadInt32();
@@ -579,7 +580,7 @@ namespace NMSPlugin
             //Parse Small Vertex Layout Info
             var small_bufcount = br.ReadInt32();
             var small_vx_type = br.ReadUInt32();
-            Console.WriteLine("Small Buffer Count: {0} VxType {1}", small_bufcount, small_vx_type);
+            PluginState.PluginRef.Log($"Small Buffer Count: {small_bufcount} VxType {small_vx_type}", LogVerbosityLevel.INFO);
             fs.Seek(0x8, SeekOrigin.Current);
             var small_mesh_descr_offset = fs.Position + br.ReadInt32();
             fs.Seek(0x4, SeekOrigin.Current);
@@ -707,7 +708,7 @@ namespace NMSPlugin
                     is_abs_offset = br.ReadUInt32()
                 };
                 geom.meshMetaDataDict[mmd.hash] = mmd;
-                Console.WriteLine(mmd.name);
+                PluginState.PluginRef.Log(mmd.name, LogVerbosityLevel.INFO);
             }
         
             //Get main mesh description
@@ -733,7 +734,7 @@ namespace NMSPlugin
 
             //Get Descr
             mesh_desc = getDescr(geom.bufInfo);
-            Console.WriteLine("Mesh Description: " + mesh_desc);
+            PluginState.PluginRef.Log("Mesh Description: " + mesh_desc, LogVerbosityLevel.INFO);
 
             //Store description
             geom.mesh_descr = mesh_desc;
@@ -757,7 +758,7 @@ namespace NMSPlugin
 
             //Get Small Descr
             small_mesh_desc = getDescr(geom.smallBufInfo);
-            Console.WriteLine("Small Mesh Description: " + small_mesh_desc);
+            PluginState.PluginRef.Log("Small Mesh Description: " + small_mesh_desc, LogVerbosityLevel.INFO);
 
             //Store description
             geom.small_mesh_descr = small_mesh_desc;
@@ -803,15 +804,15 @@ namespace NMSPlugin
         public static SceneGraphNode ImportScene(string path)
         {
             TkSceneNodeData template = (TkSceneNodeData)FileUtils.LoadNMSTemplate(path);
-            
-            Console.WriteLine("Loading Objects from MBINFile");
+
+            PluginState.PluginRef.Log("Loading Objects from MBINFile", LogVerbosityLevel.INFO);
 
             string sceneName = template.Name;
-            Callbacks.Log(string.Format("Trying to load Scene {0}", sceneName), LogVerbosityLevel.INFO);
+            PluginState.PluginRef.Log(string.Format("Trying to load Scene {0}", sceneName), LogVerbosityLevel.INFO);
             string[] split = sceneName.Split('\\');
             string scnName = split[^1];
             Callbacks.updateStatus("Importing Scene: " + scnName);
-            Callbacks.Log(string.Format("Importing Scene: {0}", scnName), LogVerbosityLevel.INFO);
+            PluginState.PluginRef.Log(string.Format("Importing Scene: {0}", scnName), LogVerbosityLevel.INFO);
             
             //Get Geometry File
             //Parse geometry once
@@ -856,7 +857,7 @@ namespace NMSPlugin
                 if (fs is null)
                 {
                     Callbacks.showError("Could not find geometry file " + geomfile + ".PC", "Error");
-                    Callbacks.Log(string.Format("Could not find geometry file {0} ", geomfile + ".PC"), LogVerbosityLevel.ERROR);
+                    PluginState.PluginRef.Log(string.Format("Could not find geometry file {0} ", geomfile + ".PC"), LogVerbosityLevel.ERROR);
 
                     //Create Dummy Scene
                     SceneGraphNode dummy = new(SceneNodeType.MODEL)
@@ -868,7 +869,7 @@ namespace NMSPlugin
 
                 gobject = ImportGeometry(ref fs, ref gfs);
                 gobject.Name = geomfile;
-                Callbacks.Log(string.Format("Geometry file {0} successfully parsed",
+                PluginState.PluginRef.Log(string.Format("Geometry file {0} successfully parsed",
                     geomfile + ".PC"), LogVerbosityLevel.INFO);
                 
                 fs.Close();
@@ -888,7 +889,7 @@ namespace NMSPlugin
         private static SceneGraphNode CreateNodeFromTemplate(TkSceneNodeData node, 
             GeomObject gobject, SceneGraphNode parent)
         {
-            Callbacks.Log(string.Format("Importing Node {0}", node.Name.Value), 
+            PluginState.PluginRef.Log(string.Format("Importing Node {0}", node.Name.Value), 
                 LogVerbosityLevel.INFO);
             Callbacks.updateStatus($"Importing Part: {node.Name.Value}");
 
@@ -933,7 +934,7 @@ namespace NMSPlugin
 
             if (typeEnum == SceneNodeType.MESH)
             {
-                Callbacks.Log(string.Format("Parsing Mesh {0}", node.Name.Value),
+                PluginState.PluginRef.Log(string.Format("Parsing Mesh {0}", node.Name.Value),
                     LogVerbosityLevel.INFO);
 
                 //Get Material Name
@@ -976,12 +977,12 @@ namespace NMSPlugin
                 };
 
                 //Common.Callbacks.Log(string.Format("Randomized Object Color {0}, {1}, {2}", so.color[0], so.color[1], so.color[2]), Common.LogVerbosityLevel.INFO);
-                Callbacks.Log(string.Format("Batch Physics Start {0} Count {1} Vertex Physics {2} - {3} Vertex Graphics {4} - {5} SkinMats {6}-{7}",
+                PluginState.PluginRef.Log(string.Format("Batch Physics Start {0} Count {1} Vertex Physics {2} - {3} Vertex Graphics {4} - {5} SkinMats {6}-{7}",
                     mmd.BatchStartPhysics, mmd.BatchCount, mmd.VertrStartPhysics, mmd.VertrEndPhysics, mmd.VertrStartGraphics, mmd.VertrEndGraphics,
                     mmd.FirstSkinMat, mmd.LastSkinMat), LogVerbosityLevel.INFO);
 
-                Console.WriteLine("Object {0}, Number of skinmatrices required: {1}", so.Name,
-                    mmd.LastSkinMat - mmd.FirstSkinMat);
+                PluginState.PluginRef.Log($"Object {so.Name}, Number of skinmatrices required: {mmd.LastSkinMat - mmd.FirstSkinMat}",
+                    LogVerbosityLevel.INFO);
 
                 //Configure boneRemap properly in the mesh metadata
                 mmd.BoneRemapIndicesCount = mmd.LastSkinMat - mmd.FirstSkinMat;
@@ -1061,7 +1062,7 @@ namespace NMSPlugin
             }
             else if (typeEnum == SceneNodeType.JOINT)
             {
-                Callbacks.Log("Joints not supported atm", LogVerbosityLevel.INFO);
+                PluginState.PluginRef.Log("Joints not supported atm", LogVerbosityLevel.INFO);
             }
             else if (typeEnum == SceneNodeType.REFERENCE)
             {
@@ -1081,7 +1082,7 @@ namespace NMSPlugin
             else if (typeEnum == SceneNodeType.COLLISION)
             {
                 string collisionType = FileUtils.parseNMSTemplateAttrib(node.Attributes, "TYPE").ToUpper();
-                Callbacks.Log($"Collision Detected {node.Name.Value} {collisionType}", LogVerbosityLevel.INFO);
+                PluginState.PluginRef.Log($"Collision Detected {node.Name.Value} {collisionType}", LogVerbosityLevel.INFO);
 
                 MeshMaterial collisionMat = EngineRef.GetMaterialByName("collisionMat");
 
@@ -1131,7 +1132,7 @@ namespace NMSPlugin
                     };
                 } else
                 {
-                    Callbacks.Log($"Unsupported collision type {collisionType}", LogVerbosityLevel.INFO);
+                    PluginState.PluginRef.Log($"Unsupported collision type {collisionType}", LogVerbosityLevel.WARNING);
                 }
 
                 //Add Mesh component to node
@@ -1196,7 +1197,7 @@ namespace NMSPlugin
                 Callbacks.Log("Unknown scenenode type. Please contant the developer", LogVerbosityLevel.WARNING);
             }
 
-            //Console.WriteLine("Children Count {0}", childs.ChildNodes.Count);
+            //PluginState.PluginRef.Log("Children Count {0}", childs.ChildNodes.Count);
             foreach (TkSceneNodeData child in node.Children)
             {
                 CreateNodeFromTemplate(child, gobject, so);

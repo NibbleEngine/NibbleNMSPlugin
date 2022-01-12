@@ -16,7 +16,7 @@ using NbCore;
 using NbCore.Common;
 using NbCore.Utils;
 
-namespace NMSPlugin
+namespace NibbleNMSPlugin
 {
     public static class Palettes
     {

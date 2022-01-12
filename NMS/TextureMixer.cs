@@ -14,7 +14,7 @@ using libMBIN.NMS.Toolkit;
 using System.Diagnostics;
 
 
-namespace NMSPlugin
+namespace NibbleNMSPlugin
 {
     public static class TextureMixer
     {

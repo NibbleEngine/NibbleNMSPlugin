@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
+	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <BaseOutputPath>..\Build\Plugins</BaseOutputPath>
@@ -18,9 +19,9 @@
     <EmbeddedResource Include="$(SolutionDir)Resources\default.dds" />
     <EmbeddedResource Include="$(SolutionDir)Resources\default_mask.dds" />
   </ItemGroup>
-  
+
   <ItemGroup>
-    <ProjectReference Include="..\Nibble\Nibble.csproj" />
+    <ProjectReference Include="..\NibbleDLL\NibbleDLL.csproj" />
   </ItemGroup>
 
   <ItemGroup>

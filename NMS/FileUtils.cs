@@ -10,7 +10,7 @@ using System.Reflection;
 using libMBIN.NMS;
 using Gameloop.Vdf;
 
-namespace NMSPlugin
+namespace NibbleNMSPlugin
 {
     public class FileUtils
     {

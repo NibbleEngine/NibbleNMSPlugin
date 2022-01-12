@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using ImGuiNET;
 using NbCore.Common;
 
-namespace NMSPlugin
+namespace NibbleNMSPlugin
 {
     unsafe public class ImGuiPakBrowser
     {
