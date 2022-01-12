@@ -36,9 +36,10 @@
   </ItemGroup>
 
   
-  <Target Name="CopyCustomContent" AfterTargets="Build;Publish">
+  <Target Name="CopyCustomContent" AfterTargets="Build">
     <Message Text="Hooya $(TargetPath)" Importance="high" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(SolutionDir)Build\Plugins" />
   </Target>
+    
 
 </Project>
