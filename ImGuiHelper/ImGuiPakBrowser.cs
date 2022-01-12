@@ -23,6 +23,7 @@ namespace NMSPlugin
 
         public void Draw()
         {
+            ImGui.SetNextWindowSize(new System.Numerics.Vector2(600, 400));
             _filter.Draw("Filter");
             //Draw listbox
             if (ImGui.BeginChild("ListBox",

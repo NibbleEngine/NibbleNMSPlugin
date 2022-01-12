@@ -318,7 +318,18 @@ namespace NMSPlugin
             Util.loadSamplerTexture(sam, texMgr);
             
             return sam;
-        }   
+        }
+
+        public static Dictionary<string, int> MaterialUniformDict = new()
+        {
+            { "gMaterialColourVec4", 0 },
+            { "gMaterialParamsVec4", 1 },
+            { "gMaterialSFXVec4", 2 },
+            { "gMaterialSFXColVec4", 3 },
+            { "gUVScrollStepVec4", 4 },
+            { "gDissolveDataVec4", 5 },
+            { "gCustomParams01Vec4", 6 }
+        };
         
         public static MeshMaterial CreateMaterialFromStruct(TkMaterialData md, TextureManager texMgr)
         {
@@ -349,16 +360,25 @@ namespace NMSPlugin
             for (int i = 0; i < md.Uniforms.Count; i++)
             {
                 TkMaterialUniform mu = md.Uniforms[i];
-                Uniform uf = new("mpCustomPerMaterial." + mu.Name);
-                uf.Name = mu.Name;
-                uf.Values = new(mu.Values.x,
-                                        mu.Values.y,
-                                        mu.Values.z,
-                                        mu.Values.t);
+
+                if (!MaterialUniformDict.ContainsKey(mu.Name))
+                {
+                    PluginState.PluginRef.Log($"Uniform {mu.Name.Value} not yet supported",
+                        LogVerbosityLevel.WARNING);
+                    continue;
+                }
+                
+                Uniform uf = new()
+                {
+                    Name = mu.Name,
+                    ID = MaterialUniformDict[mu.Name],
+                    Values = new(mu.Values.x,
+                                mu.Values.y,
+                                mu.Values.z,
+                                mu.Values.t)
+                };
                 mat.Uniforms.Add(uf);
             }
-
-                
             return mat;
         }
     
@@ -860,8 +880,8 @@ namespace NMSPlugin
 
             //Parse root scene
             SceneGraphNode root = CreateNodeFromTemplate(template, gobject, null);
-
             gobject.Dispose();
+            
             return root;
         }
 
@@ -913,14 +933,14 @@ namespace NMSPlugin
 
             if (typeEnum == SceneNodeType.MESH)
             {
-                Callbacks.Log(string.Format("Parsing Mesh {0}", node.Name.Value), 
+                Callbacks.Log(string.Format("Parsing Mesh {0}", node.Name.Value),
                     LogVerbosityLevel.INFO);
 
                 //Get Material Name
                 string matname = FileUtils.parseNMSTemplateAttrib(node.Attributes, "MATERIAL");
 
                 //Search for the material
-                
+
                 //TODO: Restore material import
                 MeshMaterial mat;
                 if (localMaterialDictionary.ContainsKey(matname))
@@ -930,7 +950,7 @@ namespace NMSPlugin
                     mat = ImportMaterial(matname, localTexMgr);
                     localMaterialDictionary.Add(matname, mat);
                 }
-                    
+
                 //Fill Mesh Meta Data
                 NbMeshMetaData mmd = new()
                 {
@@ -980,7 +1000,7 @@ namespace NMSPlugin
                 NbMesh nm = new();
                 //TODO differentiate mesh from mesh stream hashes, technically 
                 //another mesh should be able to use the same data with a different hash
-                nm.Hash =  (ulong) mmd.GetHashCode() ^ md.Hash; 
+                nm.Hash = (ulong)mmd.GetHashCode() ^ md.Hash;
                 nm.Data = md;
                 nm.MetaData = mmd;
 
@@ -998,16 +1018,18 @@ namespace NMSPlugin
                 //TODO Process the corresponding mesh if needed
                 so.AddComponent<MeshComponent>(mc);
 
+
+
             }
             else if (typeEnum == SceneNodeType.MODEL)
             {
                 //Create MeshComponent
                 MeshComponent mc = new()
                 {
-                    Mesh = RenderState.engineRef.GetPrimitiveMesh((ulong) "default_cross".GetHashCode()),
+                    Mesh = RenderState.engineRef.GetPrimitiveMesh((ulong)"default_cross".GetHashCode()),
                     Material = RenderState.engineRef.GetMaterialByName("crossMat")
                 };
-                
+
                 so.AddComponent<MeshComponent>(mc);
 
                 //Create SceneComponent
@@ -1015,7 +1037,7 @@ namespace NMSPlugin
                 {
                     NumLods = int.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "NUMLODS"))
                 };
-                
+
                 so.AddComponent<SceneComponent>(sc);
 
                 //Fetch extra LOD attributes
@@ -1028,7 +1050,14 @@ namespace NMSPlugin
             }
             else if (typeEnum == SceneNodeType.LOCATOR)
             {
-                Callbacks.Log("Locators not supported atm", LogVerbosityLevel.INFO);
+                //Create MeshComponent
+                MeshComponent mc = new()
+                {
+                    Mesh = EngineRef.GetPrimitiveMesh((ulong)"default_cross".GetHashCode()),
+                    Material = EngineRef.GetMaterialByName("crossMat")
+                };
+
+                so.AddComponent<MeshComponent>(mc);
             }
             else if (typeEnum == SceneNodeType.JOINT)
             {
@@ -1036,11 +1065,81 @@ namespace NMSPlugin
             }
             else if (typeEnum == SceneNodeType.REFERENCE)
             {
-                Callbacks.Log("References not supported atm", LogVerbosityLevel.INFO);
+                //Create Reference Component
+                ReferenceComponent rc = new()
+                {
+                    Reference = FileUtils.parseNMSTemplateAttrib(node.Attributes, "SCENEGRAPH").ToUpper()
+                };
+
+                so.AddComponent<ReferenceComponent>(rc);
+                
+                SceneGraphNode ref_node = ImportScene(rc.Reference);
+                
+                ref_node.SetParent(so);
+
             }
             else if (typeEnum == SceneNodeType.COLLISION)
             {
-                Callbacks.Log("Collisions not supported atm", LogVerbosityLevel.INFO);
+                string collisionType = FileUtils.parseNMSTemplateAttrib(node.Attributes, "TYPE").ToUpper();
+                Callbacks.Log($"Collision Detected {node.Name.Value} {collisionType}", LogVerbosityLevel.INFO);
+
+                MeshMaterial collisionMat = EngineRef.GetMaterialByName("collisionMat");
+
+                //Create Collision Component
+                CollisionComponent cc = new();
+
+                //Create MeshComponent
+                MeshComponent mc = new()
+                {
+                    Material = collisionMat
+                };
+
+                //Get Collision Mesh
+                if (collisionType == "MESH")
+                {
+                    cc.CollisionType = COLLISIONTYPES.MESH;
+
+                    //Generate Collision Mesh
+                    //Fill Mesh Meta Data
+                    NbMeshMetaData mmd = new()
+                    {
+                        BatchStartGraphics = int.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "BATCHSTART")),
+                        BatchCount = int.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "BATCHCOUNT")),
+                        VertrStartGraphics = int.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "VERTRSTART")),
+                        VertrEndGraphics = int.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "VERTREND")),
+                        FirstSkinMat = int.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "FIRSTSKINMAT")),
+                        LastSkinMat = int.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "LASTSKINMAT")),
+                        BoundHullStart = int.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "BOUNDHULLST")),
+                        BoundHullEnd = int.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "BOUNDHULLED")),
+                    };
+
+
+                    if (mmd.LastSkinMat - mmd.FirstSkinMat > 0)
+                    {
+                        throw new Exception("SKINNED COLLISION. CHECK YOUR SHIT!");
+                    }
+
+                    NbMeshData md = gobject.GetCollisionMeshData(mmd);
+
+                    //Generate Mesh
+                    mc.Mesh = new()
+                    {
+                        Hash = (ulong)mmd.GetHashCode() ^ (ulong)"CollisionMesh".GetHashCode(),
+                        Type = NbMeshType.Collision,
+                        Data = md,
+                        MetaData = mmd
+                    };
+                } else
+                {
+                    Callbacks.Log($"Unsupported collision type {collisionType}", LogVerbosityLevel.INFO);
+                }
+
+                //Add Mesh component to node
+                so.AddComponent<MeshComponent>(mc);
+
+                //Add Collision component to node
+                so.AddComponent<CollisionComponent>(cc);
+
             }
             else if (typeEnum == SceneNodeType.LIGHT)
             {
@@ -1061,8 +1160,8 @@ namespace NMSPlugin
                     Mesh = new()
                     {
                         Type = NbMeshType.Light,
-                        MetaData = ls.GetMetaData(),
-                        Data = ls.GetData(),
+                        MetaData = ls.geom.GetMetaData(),
+                        Data = ls.geom.GetData(),
                         Hash = (ulong) (so.Name.GetHashCode() ^ DateTime.Now.GetHashCode())
                     },
                     Material = EngineRef.GetMaterialByName("lightMat")
@@ -1080,6 +1179,7 @@ namespace NMSPlugin
                     {
                         Intensity = intensity,
                         FOV = fov,
+                        IsRenderable = true,
                         Falloff = (ATTENUATION_TYPE)Enum.Parse(typeof(ATTENUATION_TYPE), falloff.ToUpper()),
                         Color = new NbVector3(color_r, color_g, color_b),
                         IsUpdated = true

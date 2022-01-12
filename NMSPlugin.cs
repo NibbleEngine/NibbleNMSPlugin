@@ -52,7 +52,7 @@ namespace NMSPlugin
     //(Avoid passing plugin settings everywhere)
     public static class PluginState
     {
-        public static NMSPluginSettings Settings;
+        public static NMSPlugin PluginRef;
         public static Random Randgen = new Random();
     }
 
@@ -179,25 +179,30 @@ namespace NMSPlugin
             //Load Plugin Settings
             if (File.Exists(settingsfilepath))
             {
+                Log("Loading plugin settings file.", LogVerbosityLevel.INFO);
                 string filedata = File.ReadAllText(settingsfilepath);
                 Settings = JsonConvert.DeserializeObject<NMSPluginSettings>(filedata);
+                Log($"GameDir: {(Settings as NMSPluginSettings).GameDir}", LogVerbosityLevel.INFO);
+                Log($"UnpackDir: {(Settings as NMSPluginSettings).UnpackDir}", LogVerbosityLevel.INFO);
             }
             else
             {
-                Log(" Settings file not found.", LogVerbosityLevel.INFO);
+                Log("Plugin Settings file not found.", LogVerbosityLevel.INFO);
                 Settings = NMSPluginSettings.GenerateDefaultSettings() as NMSPluginSettings;
                 Settings.SaveToFile();
             }
+            
             //Set State
-             PluginState.Settings = Settings as NMSPluginSettings;
-
+            PluginState.PluginRef = this;
+            
             //Create a separate thread to try and load PAK archives
             //Issue work request 
 
             Thread t = new Thread(() => {
-                FileUtils.loadNMSArchives(Path.Combine(PluginState.Settings.GameDir, "PCBANKS"), 
+                FileUtils.loadNMSArchives(this, Path.Combine(((NMSPluginSettings) Settings).GameDir, "PCBANKS"), 
                     ref open_file_enabled);
             });
+            Log("Starting Work Thread.", LogVerbosityLevel.INFO);
             t.Start();
             
             //Add Defaults
@@ -224,6 +229,7 @@ namespace NMSPlugin
             EngineRef.sceneMgmtSys.ClearScene(EngineRef.GetActiveScene());
             EngineRef.RegisterSceneGraphNode(root);
             EngineRef.RequestEntityTransformUpdate(root);
+            Callbacks.updateStatus("Ready");
         }
 
         public override void Export(string filepath)

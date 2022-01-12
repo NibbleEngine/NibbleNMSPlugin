@@ -31,9 +31,11 @@ namespace NMSPlugin
             string exmlpath = Path.ChangeExtension(filepath, "exml");
             exmlpath = exmlpath.ToUpper(); //Make upper case
 
-            if (File.Exists(Path.Combine(PluginState.Settings.UnpackDir, exmlpath)))
+            NMSPluginSettings settings = PluginState.PluginRef.Settings as NMSPluginSettings;
+
+            if (File.Exists(Path.Combine(settings.UnpackDir, exmlpath)))
                 load_mode = 0; //Load Exml
-            else if (File.Exists(Path.Combine(PluginState.Settings.UnpackDir, filepath)))
+            else if (File.Exists(Path.Combine(settings.UnpackDir, filepath)))
                 load_mode = 1; //Load MBIN from file
             else if (NMSFileToArchiveMap.ContainsKey(filepath))
                 load_mode = 2; //Extract file from archive
@@ -51,9 +53,9 @@ namespace NMSPlugin
             switch (load_mode)
             {
                 case 0: //Load EXML
-                    return new FileStream(Path.Combine(PluginState.Settings.UnpackDir, exmlpath), FileMode.Open);
+                    return new FileStream(Path.Combine(settings.UnpackDir, exmlpath), FileMode.Open);
                 case 1: //Load MBIN
-                    return new FileStream(Path.Combine(PluginState.Settings.UnpackDir, filepath), FileMode.Open);
+                    return new FileStream(Path.Combine(settings.UnpackDir, filepath), FileMode.Open);
                 case 2: //Load File from Archive
                     {
                         NbCore.Common.Callbacks.Log("Trying to export File" + effective_filepath, NbCore.Common.LogVerbosityLevel.INFO);
@@ -82,9 +84,11 @@ namespace NMSPlugin
             string exmlpath = Path.ChangeExtension(filepath, "exml");
             exmlpath = exmlpath.ToUpper(); //Make upper case
 
-            if (File.Exists(Path.Combine(PluginState.Settings.UnpackDir, exmlpath)))
+            NMSPluginSettings settings = PluginState.PluginRef.Settings as NMSPluginSettings;
+
+            if (File.Exists(Path.Combine(settings.UnpackDir, exmlpath)))
                 load_mode = 0; //Load Exml
-            else if (File.Exists(Path.Combine(PluginState.Settings.UnpackDir, filepath)))
+            else if (File.Exists(Path.Combine(settings.UnpackDir, filepath)))
                 load_mode = 1; //Load MBIN from file
             else if (NMSFileToArchiveMap.ContainsKey(filepath))
                 load_mode = 2; //Extract file from archive
@@ -106,13 +110,13 @@ namespace NMSPlugin
                 {
                     case 0: //Load EXML
                         {
-                            string xml = File.ReadAllText(Path.Combine(PluginState.Settings.UnpackDir, exmlpath));
+                            string xml = File.ReadAllText(Path.Combine(settings.UnpackDir, exmlpath));
                             template = EXmlFile.ReadTemplateFromString(xml);
                             break;
                         }
                     case 1: //Load MBIN
                         {
-                            string eff_path = Path.Combine(PluginState.Settings.UnpackDir, filepath);
+                            string eff_path = Path.Combine(settings.UnpackDir, filepath);
                             MBINFile mbinf = new MBINFile(eff_path);
                             mbinf.Load();
                             template = mbinf.GetData();
@@ -158,12 +162,13 @@ namespace NMSPlugin
 #endif
             return template;
         }
-        public static void loadNMSArchives(string gameDir, ref bool file_open_enable)
+        public static void loadNMSArchives(NMSPlugin plugin, string gameDir, ref bool file_open_enable)
         {
-            NbCore.Common.Callbacks.Log("Trying to load PAK files from " + gameDir, NbCore.Common.LogVerbosityLevel.INFO);
+            plugin.Log("Trying to load PAK files from " + gameDir, NbCore.Common.LogVerbosityLevel.INFO);
             if (!Directory.Exists(gameDir))
             {
-                NbCore.Common.Callbacks.showError("Unable to locate game Directory. PAK files (Vanilla + Mods) not loaded. You can still work using unpacked files", "Info");
+                plugin.Log("Unable to locate game Directory. PAK files (Vanilla + Mods) not loaded. You can still work using unpacked files", 
+                    NbCore.Common.LogVerbosityLevel.ERROR);
                 file_open_enable = false;
                 return;
             }
@@ -190,9 +195,8 @@ namespace NMSPlugin
                 }
                 catch (Exception ex)
                 {
-                    NbCore.Common.Callbacks.showError("An Error Occured : " + ex.Message, "Error");
-                    NbCore.Common.Callbacks.Log("Pak file " + pak_path + " failed to load", NbCore.Common.LogVerbosityLevel.ERROR);
-                    NbCore.Common.Callbacks.Log("Error : " + ex.GetType().Name + " " + ex.Message, NbCore.Common.LogVerbosityLevel.ERROR);
+                    plugin.Log("Pak file " + pak_path + " failed to load", NbCore.Common.LogVerbosityLevel.ERROR);
+                    plugin.Log("Error : " + ex.GetType().Name + " " + ex.Message, NbCore.Common.LogVerbosityLevel.ERROR);
                 }
             }
 
@@ -216,16 +220,15 @@ namespace NMSPlugin
                     }
                     catch (Exception ex)
                     {
-                        NbCore.Common.Callbacks.showError("An Error Occured : " + ex.Message, "Error");
-                        NbCore.Common.Callbacks.Log("Pak file " + pak_path + " failed to load", NbCore.Common.LogVerbosityLevel.ERROR);
-                        NbCore.Common.Callbacks.Log("Error : " + ex.GetType().Name + " " + ex.Message, NbCore.Common.LogVerbosityLevel.ERROR);
+                        plugin.Log("Pak file " + pak_path + " failed to load", NbCore.Common.LogVerbosityLevel.ERROR);
+                        plugin.Log("Error : " + ex.GetType().Name + " " + ex.Message, NbCore.Common.LogVerbosityLevel.ERROR);
                     }
                 }
             }
 
             if (NMSArchiveMap.Keys.Count == 0)
             {
-                NbCore.Common.Callbacks.Log("No pak files found. Not creating/reading manifest file.", 
+                plugin.Log("No pak files found. Not creating/reading manifest file.", 
                     NbCore.Common.LogVerbosityLevel.WARNING);
                 return;
             }

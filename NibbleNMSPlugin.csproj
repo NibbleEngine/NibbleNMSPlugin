@@ -2,8 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
+	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <BaseOutputPath>..\bin\plugins</BaseOutputPath>
+    <BaseOutputPath>..\Build\Plugins</BaseOutputPath>
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 
@@ -35,9 +36,9 @@
   </ItemGroup>
 
   
-  <Target Name="CopyCustomContent" AfterTargets="AfterBuild">
+  <Target Name="CopyCustomContent" AfterTargets="Build;Publish">
     <Message Text="Hooya $(TargetPath)" Importance="high" />
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(SolutionDir)bin\$(Configuration)\$(TargetFramework)\Plugins" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(SolutionDir)Build\Plugins" />
   </Target>
 
 </Project>

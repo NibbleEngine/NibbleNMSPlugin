@@ -414,7 +414,7 @@ namespace NMSPlugin
             new_tex.Width = texWidth;
             new_tex.Height = texHeight;
             new_tex.texID = out_tex_2darray_diffuse;
-            new_tex.target = TextureTarget.Texture2DArray;
+            new_tex.target = NbTextureTarget.Texture2DArray;
 
 #if (DUMP_TEXTURES)
             GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
@@ -521,7 +521,7 @@ namespace NMSPlugin
             //Store Diffuse Texture to material
             Texture new_tex = new Texture();
             new_tex.texID = out_tex_2darray_mask;
-            new_tex.target = TextureTarget.Texture2DArray;
+            new_tex.target = NbTextureTarget.Texture2DArray;
 
 #if (DUMP_TEXTURESNONO)
             GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
@@ -627,7 +627,7 @@ namespace NMSPlugin
             //Store Diffuse Texture to material
             Texture new_tex = new Texture();
             new_tex.texID = out_tex_2darray_mask;
-            new_tex.target = TextureTarget.Texture2DArray;
+            new_tex.target = NbTextureTarget.Texture2DArray;
 
 #if (DUMP_TEXTURES)
             GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
