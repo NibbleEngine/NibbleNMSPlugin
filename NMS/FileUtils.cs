@@ -46,7 +46,7 @@ namespace NibbleNMSPlugin
             }
             else
             {
-                NbCore.Common.Callbacks.Log("File: " + filepath + " Not found in PAKs or local folders. ", NbCore.Common.LogVerbosityLevel.ERROR);
+                PluginState.PluginRef.Log("File: " + filepath + " Not found in PAKs or local folders. ", NbCore.Common.LogVerbosityLevel.ERROR);
                 NbCore.Common.Callbacks.showError("File: " + filepath + " Not found in PAKs or local folders. ", "Error");
                 throw new FileNotFoundException("File not found\n " + filepath);
             }
@@ -58,10 +58,10 @@ namespace NibbleNMSPlugin
                     return new FileStream(Path.Combine(settings.UnpackDir, filepath), FileMode.Open);
                 case 2: //Load File from Archive
                     {
-                        NbCore.Common.Callbacks.Log("Trying to export File" + effective_filepath, NbCore.Common.LogVerbosityLevel.INFO);
+                        PluginState.PluginRef.Log("Trying to export File" + effective_filepath, NbCore.Common.LogVerbosityLevel.INFO);
                         if (NMSFileToArchiveMap.ContainsKey(effective_filepath))
                         {
-                            NbCore.Common.Callbacks.Log("File was found in archives. File Index: " + NMSFileToArchiveMap[effective_filepath].GetFileIndex(effective_filepath),
+                            PluginState.PluginRef.Log("File was found in archives. File Index: " + NMSFileToArchiveMap[effective_filepath].GetFileIndex(effective_filepath),
                                 NbCore.Common.LogVerbosityLevel.INFO);
                         }
 
@@ -190,7 +190,7 @@ namespace NibbleNMSPlugin
                 {
                     FileStream arc_stream = new FileStream(pak_path, FileMode.Open);
                     libPSARC.PSARC.Archive psarc = new libPSARC.PSARC.Archive(arc_stream, true);
-                    NbCore.Common.Callbacks.Log("Loaded :" + pak_path, NbCore.Common.LogVerbosityLevel.INFO);
+                    plugin.Log("Loaded :" + pak_path, NbCore.Common.LogVerbosityLevel.INFO);
                     NMSArchiveMap[pak_path] = psarc;
                 }
                 catch (Exception ex)
@@ -207,7 +207,7 @@ namespace NibbleNMSPlugin
                 foreach (string pak_path in pak_files)
                 {
                     if (pak_path.Contains("CUSTOMMODELS"))
-                        Console.WriteLine(pak_path);
+                        plugin.Log(pak_path, NbCore.Common.LogVerbosityLevel.INFO);
 
                     if (!pak_path.EndsWith(".pak"))
                         continue;

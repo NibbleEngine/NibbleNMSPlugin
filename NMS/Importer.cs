@@ -267,7 +267,7 @@ namespace NibbleNMSPlugin
             
             mat.texMgr = input_texMgr;
             //TODO: Maybe I can check if the shader is compiled during registration
-            NbCore.Platform.Graphics.OpenGL.GLSLShaderConfig shader = EngineRef.renderSys.Renderer.CompileMaterialShader(mat, 
+            NbCore.Platform.Graphics.OpenGL.GLSLShaderConfig shader = EngineRef.CompileMaterialShader(mat, 
                 NbCore.Platform.Graphics.OpenGL.SHADER_MODE.DEFFERED);
             EngineRef.renderSys.Renderer.AttachShaderToMaterial(mat, shader);
             return mat;
@@ -903,13 +903,34 @@ namespace NibbleNMSPlugin
             };
 
 
+            ////Angle Test
+            //NbMatrix4 rotx = NbMatrix4.CreateRotationX(MathUtils.radians(node.Transform.RotX));
+            //NbMatrix4 roty = NbMatrix4.CreateRotationY(MathUtils.radians(node.Transform.RotY));
+            //NbMatrix4 rotz = NbMatrix4.CreateRotationZ(MathUtils.radians(node.Transform.RotZ));
+            //NbMatrix4 rot = rotz * rotx * roty;
+
+            //NbQuaternion test_q = NbQuaternion.FromMatrix(rot);
+            //NbVector3 test_q_angles = NbQuaternion.ToEulerAngles(test_q);
+            //test_q_angles.X = MathUtils.degrees(test_q_angles.X);
+            //test_q_angles.Y = MathUtils.degrees(test_q_angles.Y);
+            //test_q_angles.Z = MathUtils.degrees(test_q_angles.Z);
+
+            //Engine way
+            NbQuaternion engine_q = NbQuaternion.FromEulerAngles(MathUtils.radians(node.Transform.RotX),
+                                                                 MathUtils.radians(node.Transform.RotY),
+                                                                 MathUtils.radians(node.Transform.RotZ), "YXZ");
+
+            //Transform rotations to XYZ mode
+            NbVector3 rotations = NbQuaternion.ToEulerAngles(engine_q);
+
+
             //Add Transform Component
             TransformData td = new(node.Transform.TransX,
                                    node.Transform.TransY,
                                    node.Transform.TransZ,
-                                   node.Transform.RotX,
-                                   node.Transform.RotY,
-                                   node.Transform.RotZ,
+                                   MathUtils.degrees(rotations.X),
+                                   MathUtils.degrees(rotations.Y),
+                                   MathUtils.degrees(rotations.Z),
                                    node.Transform.ScaleX,
                                    node.Transform.ScaleY,
                                    node.Transform.ScaleY);
@@ -1062,7 +1083,7 @@ namespace NibbleNMSPlugin
             }
             else if (typeEnum == SceneNodeType.JOINT)
             {
-                PluginState.PluginRef.Log("Joints not supported atm", LogVerbosityLevel.INFO);
+                PluginState.PluginRef.Log("Joints not supported atm", LogVerbosityLevel.WARNING);
             }
             else if (typeEnum == SceneNodeType.REFERENCE)
             {
@@ -1130,7 +1151,52 @@ namespace NibbleNMSPlugin
                         Data = md,
                         MetaData = mmd
                     };
-                } else
+                }
+                else if (collisionType == "CAPSULE")
+                {
+                    float radius = float.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "RADIUS"));
+                    float height = float.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "HEIGHT"));
+
+                    //Default quad
+                    NbCore.Primitives.Capsule q = new(new(0.0f), height, radius);
+
+
+                    NbMeshData md = q.geom.GetData();
+                    NbMeshMetaData mmd = q.geom.GetMetaData();
+
+                    q.Dispose();
+                    
+                    //Generate Mesh
+                    mc.Mesh = new()
+                    {
+                        Hash = (ulong) mmd.GetHashCode() ^ (ulong) "CollisionCapsule".GetHashCode(),
+                        Type = NbMeshType.Collision,
+                        Data = md,
+                        MetaData = mmd
+                    };
+                }
+                else if (collisionType == "SPHERE")
+                {
+                    float radius = float.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "RADIUS"));
+                    
+                    //Default quad
+                    NbCore.Primitives.Sphere q = new(new(0.0f), radius);
+                        
+                    NbMeshData md = q.geom.GetData();
+                    NbMeshMetaData mmd = q.geom.GetMetaData();
+
+                    q.Dispose();
+
+                    //Generate Mesh
+                    mc.Mesh = new()
+                    {
+                        Hash = (ulong)mmd.GetHashCode() ^ (ulong)"CollisionSphere".GetHashCode(),
+                        Type = NbMeshType.Collision,
+                        Data = md,
+                        MetaData = mmd
+                    };
+                }
+                else
                 {
                     PluginState.PluginRef.Log($"Unsupported collision type {collisionType}", LogVerbosityLevel.WARNING);
                 }
@@ -1191,7 +1257,7 @@ namespace NibbleNMSPlugin
             }
             else if (typeEnum == SceneNodeType.EMITTER)
             {
-                Callbacks.Log("Emmiters not supported atm", LogVerbosityLevel.INFO);
+                Callbacks.Log("Emmiters not supported atm", LogVerbosityLevel.WARNING);
             } else
             {
                 Callbacks.Log("Unknown scenenode type. Please contant the developer", LogVerbosityLevel.WARNING);
