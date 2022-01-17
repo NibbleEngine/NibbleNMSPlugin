@@ -222,13 +222,14 @@ namespace NibbleNMSPlugin
 
             //Re-init pallete
             Palettes.set_palleteColors();
-
+            Importer.ClearState();
+            
             Importer.SetEngineReference(EngineRef);
             SceneGraphNode root = Importer.ImportScene(filepath);
 
-            EngineRef.sceneMgmtSys.ClearScene(EngineRef.GetActiveScene());
-            EngineRef.RegisterSceneGraphNode(root);
-            EngineRef.RequestEntityTransformUpdate(root);
+            EngineRef.ClearScene();
+            EngineRef.ImportNode(root);
+            
             Callbacks.updateStatus("Ready");
         }
 

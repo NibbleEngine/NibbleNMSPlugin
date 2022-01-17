@@ -33,10 +33,22 @@ namespace NibbleNMSPlugin
             {typeof(EmptyNode), 5}
         };
 
+        private static int ImportedSceneCounter = 0;
         private static TextureManager localTexMgr = new();
         private static Dictionary<long, NbMesh> localMeshDictionary = new();
+        private static Dictionary<string, SceneGraphNode> localJointDictionary = new();
+        private static Dictionary<int, AnimationData> localAnimationDataDictionary = new();
         private static Dictionary<string, MeshMaterial> localMaterialDictionary = new();
         private static Engine EngineRef;
+
+        public static void ClearState()
+        {
+            localAnimationDataDictionary.Clear();
+            localJointDictionary.Clear();
+            localMaterialDictionary.Clear();
+            ImportedSceneCounter = 0;
+            //localTexMgr.CleanUp(); //TODO: Do I still need this?
+        }
 
         public static void SetEngineReference(Engine engine)
         {
@@ -73,7 +85,9 @@ namespace NibbleNMSPlugin
 
         private static AnimationData CreateAnimationDataFromStruct(TkAnimationData data)
         {
-            AnimationData ad = new AnimationData()
+            PluginState.PluginRef.Log("Parsing Animation Data", LogVerbosityLevel.INFO);
+            //Generate MetaData
+            AnimationDataMetaData admd = new()
             {
                 ActionFrame = data.ActionFrame,
                 ActionStartFrame = data.ActionStartFrame,
@@ -85,20 +99,29 @@ namespace NibbleNMSPlugin
                 Mirrored = data.Mirrored,
                 Name = data.Anim,
                 StartNode = data.StartNode,
-                Speed = data.Speed,
+                Speed = data.Speed
             };
 
             //Load Type
             switch (data.AnimType)
             {
                 case TkAnimationData.AnimTypeEnum.Loop:
-                    ad.AnimType = AnimationType.Loop;
+                    admd.AnimType = AnimationType.Loop;
                     break;
                 case TkAnimationData.AnimTypeEnum.OneShot:
-                    ad.AnimType = AnimationType.OneShot;
+                    admd.AnimType = AnimationType.OneShot;
                     break;
             }
+
+            if (localAnimationDataDictionary.ContainsKey(admd.GetHashCode()))
+                return localAnimationDataDictionary[admd.GetHashCode()];
             
+
+            AnimationData ad = new AnimationData()
+            {
+                MetaData = admd
+            };
+
             //Load Animation data
             TkAnimMetadata metaData = (TkAnimMetadata)FileUtils.LoadNMSTemplate(data.Filename);
 
@@ -108,7 +131,8 @@ namespace NibbleNMSPlugin
             {
                 TkAnimNodeData node = metaData.NodeData[j];
                 //Init dictionary entries
-
+                ad.Nodes.Add(node.Node);
+                
                 ad.Rotations[node.Node] = new List<NbQuaternion>(metaData.FrameCount);
                 ad.Translations[node.Node] = new List<NbVector3>(metaData.FrameCount);
                 ad.Scales[node.Node] = new List<NbVector3>(metaData.FrameCount);
@@ -120,7 +144,9 @@ namespace NibbleNMSPlugin
                     ad.Scales[node.Node].Add(Util.fetchScaleVector(node, metaData, i));
                 }
             }
-            
+
+            //Store to local dictionary
+            localAnimationDataDictionary[ad.MetaData.GetHashCode()] = ad;
             
             return ad;
         }
@@ -128,19 +154,19 @@ namespace NibbleNMSPlugin
         private static AnimComponent CreateAnimComponentFromStruct(TkAnimationComponentData data)
         {
             AnimComponent ac = new AnimComponent();
-            
+            PluginState.PluginRef.Log("Parsing Animation Component", LogVerbosityLevel.INFO);
             //Load Animations
             if (data.Idle.Anim != "")
             {
                 AnimationData animData = CreateAnimationDataFromStruct(data.Idle);
-
+                
                 Animation IdleAnim = new Animation()
                 {
                     animData = animData
                 };
                 
-                ac._animations.Add(IdleAnim); //Add Idle Animation
-                ac._animDict[animData.Name] = ac._animations[0];
+                ac.Animations.Add(IdleAnim); //Add Idle Animation
+                ac.AnimationDict[animData.MetaData.Name] = ac.Animations[0];
             }
 
             for (int i = 0; i < data.Anims.Count; i++)
@@ -152,8 +178,8 @@ namespace NibbleNMSPlugin
                     animData = animData
                 };
                 
-                ac._animations.Add(anim);
-                ac._animDict[anim.animData.Name] = anim;
+                ac.Animations.Add(anim);
+                ac.AnimationDict[animData.MetaData.Name] = anim;
             }
 
             return ac;
@@ -227,7 +253,7 @@ namespace NibbleNMSPlugin
                 switch (SupportedComponents[comp_type])
                 {
                     case 0:
-                        ProcessAnimPoseComponent(node, comp as TkAnimPoseComponentData);
+                        //ProcessAnimPoseComponent(node, comp as TkAnimPoseComponentData);
                         break;
                     case 1:
                         ProcessAnimationComponent(node, comp as TkAnimationComponentData);
@@ -239,7 +265,7 @@ namespace NibbleNMSPlugin
                         ProcessPhysicsComponent(node, comp as TkPhysicsComponentData);
                         break;
                     case 4:
-                        ProcessTriggerActionComponent(node, comp as GcTriggerActionComponentData);
+                        //ProcessTriggerActionComponent(node, comp as GcTriggerActionComponentData);
                         break;
                     case 5: //Empty Node do nothing
                         break;
@@ -801,6 +827,22 @@ namespace NibbleNMSPlugin
 
         }
         
+        private static void AttachJointToAnimationData()
+        {
+            foreach (AnimationData ad in localAnimationDataDictionary.Values)
+            {
+                foreach (string node in ad.Nodes)
+                {
+                    if (localJointDictionary.ContainsKey(node))
+                    {
+                        SceneGraphNode joint = localJointDictionary[node];
+                        JointComponent jc = joint.GetComponent<JointComponent>() as JointComponent;
+                        ad.NodeIndexMap[node] = jc.JointIndex;
+                    }
+                }
+            }
+        }
+
         public static SceneGraphNode ImportScene(string path)
         {
             TkSceneNodeData template = (TkSceneNodeData)FileUtils.LoadNMSTemplate(path);
@@ -879,10 +921,19 @@ namespace NibbleNMSPlugin
             //Random Generetor for colors
             Random randgen = new();
 
+
+            //Clear joint and animation dictionary
+            localJointDictionary.Clear();
+            localAnimationDataDictionary.Clear();
+            
             //Parse root scene
             SceneGraphNode root = CreateNodeFromTemplate(template, gobject, null);
             gobject.Dispose();
-            
+
+            //Attach joints to animationdata
+            AttachJointToAnimationData();
+            ImportedSceneCounter++;
+
             return root;
         }
 
@@ -950,8 +1001,7 @@ namespace NibbleNMSPlugin
             }
 
             //Process Attachments
-            //TODO: Skip components for now
-            //ProcessComponents(so, attachment_data);
+            ProcessComponents(so, attachment_data);
 
             if (typeEnum == SceneNodeType.MESH)
             {
@@ -1011,10 +1061,14 @@ namespace NibbleNMSPlugin
                 for (int i = 0; i < mmd.BoneRemapIndicesCount; i++)
                     mmd.BoneRemapIndices[i] = gobject.boneRemap[mmd.FirstSkinMat + i];
 
+                int meshGroupID = -1;
                 //Set skinned flag
                 if (mmd.BoneRemapIndicesCount > 0)
+                {
+                    meshGroupID = ImportedSceneCounter;
                     mmd.skinned = true;
-
+                }
+                    
                 //Load Mesh Data
                 NbMeshData md = gobject.GetMeshData(mmd.Hash); //TODO: Check that function
 
@@ -1025,6 +1079,7 @@ namespace NibbleNMSPlugin
                 nm.Hash = (ulong)mmd.GetHashCode() ^ md.Hash;
                 nm.Data = md;
                 nm.MetaData = mmd;
+                nm.GroupID = meshGroupID;
 
                 //Set skinned flag if its set as a material flag
                 //if (mat.has_flag(MaterialFlagEnum._F02_SKINNED))
@@ -1039,7 +1094,6 @@ namespace NibbleNMSPlugin
 
                 //TODO Process the corresponding mesh if needed
                 so.AddComponent<MeshComponent>(mc);
-
 
 
             }
@@ -1083,7 +1137,16 @@ namespace NibbleNMSPlugin
             }
             else if (typeEnum == SceneNodeType.JOINT)
             {
-                PluginState.PluginRef.Log("Joints not supported atm", LogVerbosityLevel.WARNING);
+                //Create Joint Component
+                JointComponent jc = new()
+                {
+                    JointIndex = int.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "JOINTINDEX"))
+                };
+
+                so.AddComponent<JointComponent>(jc);
+
+                //Keep track of imported joints
+                localJointDictionary[so.Name] = so;
             }
             else if (typeEnum == SceneNodeType.REFERENCE)
             {
