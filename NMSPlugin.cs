@@ -226,9 +226,8 @@ namespace NibbleNMSPlugin
             
             Importer.SetEngineReference(EngineRef);
             SceneGraphNode root = Importer.ImportScene(filepath);
-
-            EngineRef.ClearScene();
-            EngineRef.ImportNode(root);
+            EngineRef.ClearActiveSceneGraph();
+            EngineRef.ImportScene(root);
             
             Callbacks.updateStatus("Ready");
         }
@@ -263,7 +262,7 @@ namespace NibbleNMSPlugin
 
         }
 
-        public override void DrawExporters(Scene scn)
+        public override void DrawExporters(SceneGraph scn)
         {
             
         }

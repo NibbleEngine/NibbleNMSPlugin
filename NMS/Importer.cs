@@ -34,6 +34,7 @@ namespace NibbleNMSPlugin
         };
 
         private static int ImportedSceneCounter = 0;
+        private static NbMeshGroup SceneMeshGroup = null;
         private static TextureManager localTexMgr = new();
         private static Dictionary<long, NbMesh> localMeshDictionary = new();
         private static Dictionary<string, SceneGraphNode> localJointDictionary = new();
@@ -79,7 +80,7 @@ namespace NibbleNMSPlugin
 
         private static void ProcessAnimationComponent(SceneGraphNode node, TkAnimationComponentData component)
         {
-            AnimComponent ac = CreateAnimComponentFromStruct(component);
+            AnimComponent ac = CreateAnimComponentFromStruct(node.Root, component);
             node.AddComponent<AnimComponent>(ac);
         }
 
@@ -151,7 +152,7 @@ namespace NibbleNMSPlugin
             return ad;
         }
 
-        private static AnimComponent CreateAnimComponentFromStruct(TkAnimationComponentData data)
+        private static AnimComponent CreateAnimComponentFromStruct(SceneGraphNode sceneRoot, TkAnimationComponentData data)
         {
             AnimComponent ac = new AnimComponent();
             PluginState.PluginRef.Log("Parsing Animation Component", LogVerbosityLevel.INFO);
@@ -159,10 +160,12 @@ namespace NibbleNMSPlugin
             if (data.Idle.Anim != "")
             {
                 AnimationData animData = CreateAnimationDataFromStruct(data.Idle);
-                
+
                 Animation IdleAnim = new Animation()
                 {
-                    animData = animData
+                    AnimationRoot = sceneRoot,
+                    animData = animData,
+                    RefMeshGroup = SceneMeshGroup
                 };
                 
                 ac.Animations.Add(IdleAnim); //Add Idle Animation
@@ -175,7 +178,9 @@ namespace NibbleNMSPlugin
                 //Create Animation Instances
                 Animation anim = new Animation()
                 {
-                    animData = animData
+                    AnimationRoot = sceneRoot,
+                    animData = animData,
+                    RefMeshGroup = SceneMeshGroup
                 };
                 
                 ac.Animations.Add(anim);
@@ -855,7 +860,7 @@ namespace NibbleNMSPlugin
             string scnName = split[^1];
             Callbacks.updateStatus("Importing Scene: " + scnName);
             PluginState.PluginRef.Log(string.Format("Importing Scene: {0}", scnName), LogVerbosityLevel.INFO);
-            
+
             //Get Geometry File
             //Parse geometry once
             string geomfile = FileUtils.parseNMSTemplateAttrib(template.Attributes, "GEOMETRY");
@@ -880,7 +885,7 @@ namespace NibbleNMSPlugin
                 //Load Gstream and Create gobject
 
                 Stream fs, gfs;
-                
+
                 fs = FileUtils.LoadNMSFileStream(geomfile + ".PC");
 
                 //Try to fetch the geometry.data.mbin file in order to fetch the geometry streams
@@ -913,7 +918,7 @@ namespace NibbleNMSPlugin
                 gobject.Name = geomfile;
                 PluginState.PluginRef.Log(string.Format("Geometry file {0} successfully parsed",
                     geomfile + ".PC"), LogVerbosityLevel.INFO);
-                
+
                 fs.Close();
                 gfs.Close();
             }
@@ -921,24 +926,54 @@ namespace NibbleNMSPlugin
             //Random Generetor for colors
             Random randgen = new();
 
-
             //Clear joint and animation dictionary
             localJointDictionary.Clear();
             localAnimationDataDictionary.Clear();
-            
+
+            //Initialize SceneMeshGroup
+            SceneMeshGroup = new()
+            {
+                ID = ImportedSceneCounter,
+                Meshes = new()
+            };
+
+            //Store skinMatrices from the geometry object to the scenegroup
+            SceneMeshGroup.boneRemapIndices = new int[gobject.boneRemap.Length];
+            for (int i = 0; i < gobject.boneRemap.Length; i++)
+                SceneMeshGroup.boneRemapIndices[i] = gobject.boneRemap[i];
+
+            //Store JointBindingData from the geometry object to the scenegroup
+            SceneMeshGroup.JointBindingDataList = gobject.jointData.ToList();
+
+
+            //mmd.BoneRemapIndices = new int[mmd.BoneRemapIndicesCount];
+            //for (int i = 0; i < mmd.BoneRemapIndicesCount; i++)
+            //    mmd.BoneRemapIndices[i] = gobject.boneRemap[mmd.FirstSkinMat + i];
+
             //Parse root scene
-            SceneGraphNode root = CreateNodeFromTemplate(template, gobject, null);
+            SceneGraphNode root = CreateNodeFromTemplate(template, gobject, null, null);
             gobject.Dispose();
 
             //Attach joints to animationdata
             AttachJointToAnimationData();
-            ImportedSceneCounter++;
 
+            //Mark dynamic nodes if joints exist
+            SceneComponent sc = root.GetComponent<SceneComponent>() as SceneComponent;
+            if (sc.JointNodes.Count > 0)
+            {
+                foreach (SceneGraphNode node in sc.Nodes)
+                {
+                    TransformComponent tc = node.GetComponent<TransformComponent>() as TransformComponent;
+                    tc.IsControllable = true;
+                }
+            }
+    
+            ImportedSceneCounter++;
             return root;
         }
 
-        private static SceneGraphNode CreateNodeFromTemplate(TkSceneNodeData node, 
-            GeomObject gobject, SceneGraphNode parent)
+        private static SceneGraphNode CreateNodeFromTemplate(TkSceneNodeData node,
+            GeomObject gobject, SceneGraphNode parent, SceneGraphNode sceneRef)
         {
             PluginState.PluginRef.Log(string.Format("Importing Node {0}", node.Name.Value), 
                 LogVerbosityLevel.INFO);
@@ -952,7 +987,6 @@ namespace NibbleNMSPlugin
                 Name = node.Name.Value,
                 NameHash = node.NameHash
             };
-
 
             ////Angle Test
             //NbMatrix4 rotx = NbMatrix4.CreateRotationX(MathUtils.radians(node.Transform.RotX));
@@ -987,21 +1021,6 @@ namespace NibbleNMSPlugin
                                    node.Transform.ScaleY);
             TransformComponent tc = new(td);
             so.AddComponent<TransformComponent>(tc);
-
-            //Set Parent after the transform component has been initialized
-            if (parent != null)
-                so.SetParent(parent);
-            
-            //For now fetch only one attachment
-            string attachment = FileUtils.parseNMSTemplateAttrib(node.Attributes, "ATTACHMENT");
-            TkAttachmentData attachment_data = null;
-            if (attachment != "")
-            {
-                attachment_data = FileUtils.LoadNMSTemplate(attachment) as TkAttachmentData;
-            }
-
-            //Process Attachments
-            ProcessComponents(so, attachment_data);
 
             if (typeEnum == SceneNodeType.MESH)
             {
@@ -1057,18 +1076,7 @@ namespace NibbleNMSPlugin
 
                 //Configure boneRemap properly in the mesh metadata
                 mmd.BoneRemapIndicesCount = mmd.LastSkinMat - mmd.FirstSkinMat;
-                mmd.BoneRemapIndices = new int[mmd.BoneRemapIndicesCount];
-                for (int i = 0; i < mmd.BoneRemapIndicesCount; i++)
-                    mmd.BoneRemapIndices[i] = gobject.boneRemap[mmd.FirstSkinMat + i];
-
-                int meshGroupID = -1;
-                //Set skinned flag
-                if (mmd.BoneRemapIndicesCount > 0)
-                {
-                    meshGroupID = ImportedSceneCounter;
-                    mmd.skinned = true;
-                }
-                    
+                
                 //Load Mesh Data
                 NbMeshData md = gobject.GetMeshData(mmd.Hash); //TODO: Check that function
 
@@ -1079,8 +1087,15 @@ namespace NibbleNMSPlugin
                 nm.Hash = (ulong)mmd.GetHashCode() ^ md.Hash;
                 nm.Data = md;
                 nm.MetaData = mmd;
-                nm.GroupID = meshGroupID;
 
+                NbMeshGroup mg = null;
+                //Set skinned flag
+                if (mmd.BoneRemapIndicesCount > 0)
+                {
+                    nm.Group = SceneMeshGroup;
+                    SceneMeshGroup.Meshes.Add(nm);
+                } 
+                
                 //Set skinned flag if its set as a material flag
                 //if (mat.has_flag(MaterialFlagEnum._F02_SKINNED))
                 //    mmd.skinned = true;
@@ -1123,6 +1138,7 @@ namespace NibbleNMSPlugin
                     sc.LODDistances.Add(attr_val);
                 }
 
+                sceneRef = so;
             }
             else if (typeEnum == SceneNodeType.LOCATOR)
             {
@@ -1326,10 +1342,34 @@ namespace NibbleNMSPlugin
                 Callbacks.Log("Unknown scenenode type. Please contant the developer", LogVerbosityLevel.WARNING);
             }
 
+            //Set Parent after the transform component has been initialized
+            if (parent != null)
+                so.SetParent(parent);
+            
+            so.Root = sceneRef;
+
+            //Once all components are in place, properly populate
+            if (sceneRef != null)
+            {
+                SceneComponent sc = sceneRef.GetComponent<SceneComponent>() as SceneComponent;
+                sc.AddNode(so);
+            }
+
+            //For now fetch only one attachment
+            string attachment = FileUtils.parseNMSTemplateAttrib(node.Attributes, "ATTACHMENT");
+            TkAttachmentData attachment_data = null;
+            if (attachment != "")
+            {
+                attachment_data = FileUtils.LoadNMSTemplate(attachment) as TkAttachmentData;
+            }
+
+            //Process Attachments
+            ProcessComponents(so, attachment_data);
+
             //PluginState.PluginRef.Log("Children Count {0}", childs.ChildNodes.Count);
             foreach (TkSceneNodeData child in node.Children)
             {
-                CreateNodeFromTemplate(child, gobject, so);
+                CreateNodeFromTemplate(child, gobject, so, sceneRef);
             }
 
             //Finally Order children by name
