@@ -131,11 +131,11 @@ namespace NibbleNMSPlugin
             if (ImGui.BeginPopupModal("update-libmbin", ref isOpen, ImGuiWindowFlags.None))
             {
                 if (libMbinLocalVersion == null)
-                    libMbinLocalVersion = NbCore.Utils.HTMLUtils.queryLibMBINDLLLocalVersion();
+                    libMbinLocalVersion = HTMLUtils.queryLibMBINDLLLocalVersion();
 
                 if (libMbinOnlineVersion == null)
                 {
-                    libMbinOnlineVersion = NbCore.Utils.HTMLUtils.queryLibMBINDLLOnlineVersion();
+                    libMbinOnlineVersion = HTMLUtils.queryLibMBINDLLOnlineVersion();
                 }
 
                 ImGui.Text("Old Version: " + libMbinLocalVersion);
@@ -157,7 +157,7 @@ namespace NibbleNMSPlugin
 
                 if (updatelibmbin)
                 {
-                    NbCore.Utils.HTMLUtils.updateLibMBIN();
+                    HTMLUtils.updateLibMBIN();
                     libMbinLocalVersion = null;
                     libMbinOnlineVersion = null;
                     ImGui.CloseCurrentPopup();

@@ -143,7 +143,7 @@ namespace NibbleNMSPlugin
             return new Texture(data, true, path);
         }
 
-        public static void loadSamplerTexture(Sampler sampler, TextureManager texMgr)
+        public static void loadSamplerTexture(NbSampler sampler, TextureManager texMgr)
         {
             if (sampler.Map == "")
                 return;
@@ -169,7 +169,7 @@ namespace NibbleNMSPlugin
             //on the other samplers with the appropriate names
             //TODO: Go through the process of loading procedural textures again. I don't like this at all
 
-            foreach (Sampler s in mat.Samplers)
+            foreach (NbSampler s in mat.Samplers)
             {
                 //Check if the first sampler is procgen
                 if (s.isProcGen)

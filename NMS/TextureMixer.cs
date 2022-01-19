@@ -284,8 +284,8 @@ namespace NibbleNMSPlugin
 
 
             //Diffuse Output
-            fbo_tex = Sampler.generate2DTexture(PixelInternalFormat.Rgba, texWidth, texHeight, PixelFormat.Rgba, PixelType.UnsignedByte, 1);
-            Sampler.setupTextureParameters(TextureTarget.Texture2D, fbo_tex, (int)TextureWrapMode.Repeat,
+            fbo_tex = NbSampler.generate2DTexture(PixelInternalFormat.Rgba, texWidth, texHeight, PixelFormat.Rgba, PixelType.UnsignedByte, 1);
+            NbSampler.setupTextureParameters(TextureTarget.Texture2D, fbo_tex, (int)TextureWrapMode.Repeat,
                 (int)TextureMagFilter.Linear, (int)TextureMinFilter.LinearMipmapLinear, 4.0f);
 
             //Create New RenderBuffer for the diffuse
@@ -394,8 +394,8 @@ namespace NibbleNMSPlugin
 
             
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());
-            int out_tex_2darray_diffuse = Sampler.generateTexture2DArray(PixelInternalFormat.Rgba8, texWidth, texHeight, 1, PixelFormat.Rgba, PixelType.UnsignedByte, 11);
-            Sampler.setupTextureParameters(TextureTarget.Texture2DArray, out_tex_2darray_diffuse, (int)TextureWrapMode.Repeat,
+            int out_tex_2darray_diffuse = NbSampler.generateTexture2DArray(PixelInternalFormat.Rgba8, texWidth, texHeight, 1, PixelFormat.Rgba, PixelType.UnsignedByte, 11);
+            NbSampler.setupTextureParameters(TextureTarget.Texture2DArray, out_tex_2darray_diffuse, (int)TextureWrapMode.Repeat,
                 (int)TextureMagFilter.Linear, (int)TextureMinFilter.LinearMipmapLinear, 4.0f);
 
             //Copy the read buffers to the 
@@ -405,7 +405,7 @@ namespace NibbleNMSPlugin
             GL.CopyTexSubImage3D(TextureTarget.Texture2DArray, 0, 0, 0, 0, 0, 0, texWidth, texHeight);
 
             //Generate Mipmaps to the new textures from the base level
-            Sampler.generateTexture2DArrayMipmaps(out_tex_2darray_diffuse);
+            NbSampler.generateTexture2DArrayMipmaps(out_tex_2darray_diffuse);
 
             //Find name for textures
 
@@ -503,8 +503,8 @@ namespace NibbleNMSPlugin
                 shader, shader.CurrentState);
 
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());
-            int out_tex_2darray_mask = Sampler.generateTexture2DArray(PixelInternalFormat.Rgba8, texWidth, texHeight, 1, PixelFormat.Rgba, PixelType.UnsignedByte, 11);
-            Sampler.setupTextureParameters(TextureTarget.Texture2DArray, out_tex_2darray_mask, (int)TextureWrapMode.Repeat,
+            int out_tex_2darray_mask = NbSampler.generateTexture2DArray(PixelInternalFormat.Rgba8, texWidth, texHeight, 1, PixelFormat.Rgba, PixelType.UnsignedByte, 11);
+            NbSampler.setupTextureParameters(TextureTarget.Texture2DArray, out_tex_2darray_mask, (int)TextureWrapMode.Repeat,
                 (int)TextureMagFilter.Linear, (int)TextureMinFilter.LinearMipmapLinear, 4.0f);
 
             //Copy the read buffers to the 
@@ -514,7 +514,7 @@ namespace NibbleNMSPlugin
             GL.CopyTexSubImage3D(TextureTarget.Texture2DArray, 0, 0, 0, 0, 0, 0, texWidth, texHeight);
 
             //Generate Mipmaps to the new textures from the base level
-            Sampler.generateTexture2DArrayMipmaps(out_tex_2darray_mask);
+            NbSampler.generateTexture2DArrayMipmaps(out_tex_2darray_mask);
 
             //Find name for textures
 
@@ -609,8 +609,8 @@ namespace NibbleNMSPlugin
                 shader, shader.CurrentState);
 
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());
-            int out_tex_2darray_mask = Sampler.generateTexture2DArray(PixelInternalFormat.Rgba8, texWidth, texHeight, 1, PixelFormat.Rgba, PixelType.UnsignedByte, 11);
-            Sampler.setupTextureParameters(TextureTarget.Texture2DArray, out_tex_2darray_mask, (int)TextureWrapMode.Repeat,
+            int out_tex_2darray_mask = NbSampler.generateTexture2DArray(PixelInternalFormat.Rgba8, texWidth, texHeight, 1, PixelFormat.Rgba, PixelType.UnsignedByte, 11);
+            NbSampler.setupTextureParameters(TextureTarget.Texture2DArray, out_tex_2darray_mask, (int)TextureWrapMode.Repeat,
                 (int)TextureMagFilter.Linear, (int)TextureMinFilter.LinearMipmapLinear, 4.0f);
 
             //Copy the read buffers to the 
@@ -620,7 +620,7 @@ namespace NibbleNMSPlugin
             GL.CopyTexSubImage3D(TextureTarget.Texture2DArray, 0, 0, 0, 0, 0, 0, texWidth, texHeight);
 
             //Generate Mipmaps to the new textures from the base level
-            Sampler.generateTexture2DArrayMipmaps(out_tex_2darray_mask);
+            NbSampler.generateTexture2DArrayMipmaps(out_tex_2darray_mask);
 
             //Find name for textures
 

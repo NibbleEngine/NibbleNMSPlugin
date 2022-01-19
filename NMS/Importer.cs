@@ -304,9 +304,9 @@ namespace NibbleNMSPlugin
             return mat;
         }
 
-        public static Sampler CreateSamplerFromStruct(TkMaterialSampler ms, TextureManager texMgr)
+        public static NbSampler CreateSamplerFromStruct(TkMaterialSampler ms, TextureManager texMgr)
         {
-            Sampler sam = new Sampler();
+            NbSampler sam = new NbSampler();
             
             switch (ms.Name.Value)
             {
@@ -380,7 +380,7 @@ namespace NibbleNMSPlugin
             for (int i = 0; i < md.Samplers.Count; i++)
             {
                 TkMaterialSampler ms = md.Samplers[i];
-                Sampler s = CreateSamplerFromStruct(md.Samplers[i], texMgr);
+                NbSampler s = CreateSamplerFromStruct(md.Samplers[i], texMgr);
                 if (s != null)
                 {
                     mat.Samplers.Add(s);
@@ -399,7 +399,7 @@ namespace NibbleNMSPlugin
                     continue;
                 }
                 
-                Uniform uf = new()
+                NbUniform uf = new()
                 {
                     Name = mu.Name,
                     ID = MaterialUniformDict[mu.Name],
@@ -1088,7 +1088,6 @@ namespace NibbleNMSPlugin
                 nm.Data = md;
                 nm.MetaData = mmd;
 
-                NbMeshGroup mg = null;
                 //Set skinned flag
                 if (mmd.BoneRemapIndicesCount > 0)
                 {

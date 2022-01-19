@@ -132,7 +132,7 @@ namespace NibbleNMSPlugin
                 newPal[pal_name] = new Dictionary<string, NbVector4>();
 
                 //Generate Bitmap for palette
-                Bitmap bmp = new Bitmap(64, 1);
+                //Bitmap bmp = new Bitmap(64, 1);
 
                 for (int j = 0; j < template.Palettes[i].Colours.Length; j++)
                 {
