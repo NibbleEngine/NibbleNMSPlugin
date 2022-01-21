@@ -35,9 +35,8 @@ namespace NibbleNMSPlugin
 
         private static int ImportedSceneCounter = 0;
         private static NbMeshGroup SceneMeshGroup = null;
+        //private static NbAnimationGroup ActiveAnimationGroup = null;
         private static TextureManager localTexMgr = new();
-        private static Dictionary<long, NbMesh> localMeshDictionary = new();
-        private static Dictionary<string, SceneGraphNode> localJointDictionary = new();
         private static Dictionary<int, AnimationData> localAnimationDataDictionary = new();
         private static Dictionary<string, MeshMaterial> localMaterialDictionary = new();
         private static Engine EngineRef;
@@ -45,7 +44,6 @@ namespace NibbleNMSPlugin
         public static void ClearState()
         {
             localAnimationDataDictionary.Clear();
-            localJointDictionary.Clear();
             localMaterialDictionary.Clear();
             ImportedSceneCounter = 0;
             //localTexMgr.CleanUp(); //TODO: Do I still need this?
@@ -155,6 +153,8 @@ namespace NibbleNMSPlugin
         private static AnimComponent CreateAnimComponentFromStruct(SceneGraphNode sceneRoot, TkAnimationComponentData data)
         {
             AnimComponent ac = new AnimComponent();
+            ac.AnimGroup.AnimationRoot = sceneRoot;
+            ac.AnimGroup.RefMeshGroup = SceneMeshGroup;
             PluginState.PluginRef.Log("Parsing Animation Component", LogVerbosityLevel.INFO);
             //Load Animations
             if (data.Idle.Anim != "")
@@ -163,13 +163,11 @@ namespace NibbleNMSPlugin
 
                 Animation IdleAnim = new Animation()
                 {
-                    AnimationRoot = sceneRoot,
                     animData = animData,
-                    RefMeshGroup = SceneMeshGroup
                 };
-                
-                ac.Animations.Add(IdleAnim); //Add Idle Animation
-                ac.AnimationDict[animData.MetaData.Name] = ac.Animations[0];
+
+                ac.AnimGroup.Animations.Add(IdleAnim);
+                ac.AnimationDict[animData.MetaData.Name] = IdleAnim;
             }
 
             for (int i = 0; i < data.Anims.Count; i++)
@@ -178,12 +176,10 @@ namespace NibbleNMSPlugin
                 //Create Animation Instances
                 Animation anim = new Animation()
                 {
-                    AnimationRoot = sceneRoot,
                     animData = animData,
-                    RefMeshGroup = SceneMeshGroup
                 };
-                
-                ac.Animations.Add(anim);
+
+                ac.AnimGroup.Animations.Add(anim);
                 ac.AnimationDict[animData.MetaData.Name] = anim;
             }
 
@@ -832,22 +828,6 @@ namespace NibbleNMSPlugin
 
         }
         
-        private static void AttachJointToAnimationData()
-        {
-            foreach (AnimationData ad in localAnimationDataDictionary.Values)
-            {
-                foreach (string node in ad.Nodes)
-                {
-                    if (localJointDictionary.ContainsKey(node))
-                    {
-                        SceneGraphNode joint = localJointDictionary[node];
-                        JointComponent jc = joint.GetComponent<JointComponent>() as JointComponent;
-                        ad.NodeIndexMap[node] = jc.JointIndex;
-                    }
-                }
-            }
-        }
-
         public static SceneGraphNode ImportScene(string path)
         {
             TkSceneNodeData template = (TkSceneNodeData)FileUtils.LoadNMSTemplate(path);
@@ -927,7 +907,6 @@ namespace NibbleNMSPlugin
             Random randgen = new();
 
             //Clear joint and animation dictionary
-            localJointDictionary.Clear();
             localAnimationDataDictionary.Clear();
 
             //Initialize SceneMeshGroup
@@ -942,20 +921,17 @@ namespace NibbleNMSPlugin
             for (int i = 0; i < gobject.boneRemap.Length; i++)
                 SceneMeshGroup.boneRemapIndices[i] = gobject.boneRemap[i];
 
+            for (int i = 0; i < gobject.jointData.Count; i++)
+            {
+                SceneMeshGroup.JointBindingDataList[i].invBindMatrix = gobject.jointData[i].invBindMatrix;
+            }
+
             //Store JointBindingData from the geometry object to the scenegroup
-            SceneMeshGroup.JointBindingDataList = gobject.jointData.ToList();
-
-
-            //mmd.BoneRemapIndices = new int[mmd.BoneRemapIndicesCount];
-            //for (int i = 0; i < mmd.BoneRemapIndicesCount; i++)
-            //    mmd.BoneRemapIndices[i] = gobject.boneRemap[mmd.FirstSkinMat + i];
+            ImportedSceneCounter++;
 
             //Parse root scene
             SceneGraphNode root = CreateNodeFromTemplate(template, gobject, null, null);
             gobject.Dispose();
-
-            //Attach joints to animationdata
-            AttachJointToAnimationData();
 
             //Mark dynamic nodes if joints exist
             SceneComponent sc = root.GetComponent<SceneComponent>() as SceneComponent;
@@ -968,14 +944,13 @@ namespace NibbleNMSPlugin
                 }
             }
     
-            ImportedSceneCounter++;
             return root;
         }
 
         private static SceneGraphNode CreateNodeFromTemplate(TkSceneNodeData node,
             GeomObject gobject, SceneGraphNode parent, SceneGraphNode sceneRef)
         {
-            PluginState.PluginRef.Log(string.Format("Importing Node {0}", node.Name.Value), 
+            PluginState.PluginRef.Log($"Importing Node {node.Name.Value} Type {node.Type.Value}", 
                 LogVerbosityLevel.INFO);
             Callbacks.updateStatus($"Importing Part: {node.Name.Value}");
 
@@ -1089,16 +1064,9 @@ namespace NibbleNMSPlugin
                 nm.MetaData = mmd;
 
                 //Set skinned flag
-                if (mmd.BoneRemapIndicesCount > 0)
-                {
-                    nm.Group = SceneMeshGroup;
-                    SceneMeshGroup.Meshes.Add(nm);
-                } 
+                nm.Group = SceneMeshGroup;
+                SceneMeshGroup.Meshes.Add(nm);
                 
-                //Set skinned flag if its set as a material flag
-                //if (mat.has_flag(MaterialFlagEnum._F02_SKINNED))
-                //    mmd.skinned = true;
-
                 //Finally Add MeshComponent
                 MeshComponent mc = new()
                 {
@@ -1160,8 +1128,7 @@ namespace NibbleNMSPlugin
 
                 so.AddComponent<JointComponent>(jc);
 
-                //Keep track of imported joints
-                localJointDictionary[so.Name] = so;
+                
             }
             else if (typeEnum == SceneNodeType.REFERENCE)
             {
@@ -1172,9 +1139,29 @@ namespace NibbleNMSPlugin
                 };
 
                 so.AddComponent<ReferenceComponent>(rc);
-                
+
+                //Keep Old Import State so that we can bring it back
+                NbMeshGroup backup_SceneMeshGroup = SceneMeshGroup;
+                TextureManager backup_localTexMgr = localTexMgr;
+                Dictionary<string, SceneGraphNode> backup_localJointDictionary = new();
+                Dictionary<string, MeshMaterial> backup_localMaterialDictionary = new();
+                foreach (var pair in localMaterialDictionary)
+                    backup_localMaterialDictionary[pair.Key] = pair.Value;
+
+                //Clear State
+                localTexMgr = new();
+                localAnimationDataDictionary.Clear();
+                localMaterialDictionary.Clear();
+
+                //Import Scene
                 SceneGraphNode ref_node = ImportScene(rc.Reference);
-                
+
+                //Restore State
+                SceneMeshGroup = backup_SceneMeshGroup;
+                localTexMgr = backup_localTexMgr;
+                localMaterialDictionary.Clear();
+                foreach (var pair in backup_localMaterialDictionary)
+                    localMaterialDictionary[pair.Key] = pair.Value;
                 ref_node.SetParent(so);
 
             }
@@ -1269,6 +1256,29 @@ namespace NibbleNMSPlugin
                     mc.Mesh = new()
                     {
                         Hash = (ulong)mmd.GetHashCode() ^ (ulong)"CollisionSphere".GetHashCode(),
+                        Type = NbMeshType.Collision,
+                        Data = md,
+                        MetaData = mmd
+                    };
+                }
+                else if (collisionType == "BOX")
+                {
+                    float width = float.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "WIDTH"));
+                    float height = float.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "HEIGHT"));
+                    float depth = float.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "DEPTH"));
+
+                    //Default quad
+                    NbCore.Primitives.Box q = new(width, height, depth, new NbVector3(1.0f,0.0f,0.0f), true);
+
+                    NbMeshData md = q.geom.GetData();
+                    NbMeshMetaData mmd = q.geom.GetMetaData();
+
+                    q.Dispose();
+
+                    //Generate Mesh
+                    mc.Mesh = new()
+                    {
+                        Hash = (ulong)mmd.GetHashCode() ^ (ulong)"CollisionBox".GetHashCode(),
                         Type = NbMeshType.Collision,
                         Data = md,
                         MetaData = mmd
