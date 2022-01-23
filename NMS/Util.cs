@@ -19,16 +19,6 @@ namespace NibbleNMSPlugin
 {
     public static class Util
     {
-        public static Dictionary<string, TextureUnit> MapTextureUnit = new()
-        {
-            { "mpCustomPerMaterial.gDiffuseMap", TextureUnit.Texture0 },
-            { "mpCustomPerMaterial.gMasksMap", TextureUnit.Texture1 },
-            { "mpCustomPerMaterial.gNormalMap", TextureUnit.Texture2 },
-            { "mpCustomPerMaterial.gDiffuse2Map", TextureUnit.Texture3 },
-            { "mpCustomPerMaterial.gDetailDiffuseMap", TextureUnit.Texture4 },
-            { "mpCustomPerMaterial.gDetailNormalMap", TextureUnit.Texture5 }
-        };
-
         public static Dictionary<string, int> MapTexUnitToSampler = new()
         {
             { "mpCustomPerMaterial.gDiffuseMap", 0 },
@@ -148,18 +138,21 @@ namespace NibbleNMSPlugin
             if (sampler.Map == "")
                 return;
 
+            Texture tex;
             //Try to load the texture
             if (texMgr.HasTexture(sampler.Map))
             {
-                sampler.Tex = texMgr.Get(sampler.Map);
+                tex = texMgr.Get(sampler.Map);
             }
             else
             {
-                Texture tex = LoadNMSTexture(sampler.Map);
+                tex = LoadNMSTexture(sampler.Map);
                 tex.palOpt = new PaletteOpt(false);
                 tex.procColor = new NbVector4(1.0f, 1.0f, 1.0f, 0.0f);
-                sampler.Tex = tex;
             }
+
+            //Set Sampler Properties
+            sampler.SetTexture(tex);
         }
 
         public static void PrepareProcGenSamplers(MeshMaterial mat, TextureManager texMgr)
@@ -187,13 +180,13 @@ namespace NibbleNMSPlugin
                     {
                         string new_name = pre_ext_name + "MASKS.DDS";
                         mat.SamplerMap["mpCustomPerMaterial.gMasksMap"].Map = new_name;
-                        mat.SamplerMap["mpCustomPerMaterial.gMasksMap"].Tex = texMgr.Get(new_name);
+                        mat.SamplerMap["mpCustomPerMaterial.gMasksMap"].SetTexture(texMgr.Get(new_name));
                     }
                     else if (mat.SamplerMap.ContainsKey("mpCustomPerMaterial.gNormalMap"))
                     {
                         string new_name = pre_ext_name + "NORMAL.DDS";
                         mat.SamplerMap["mpCustomPerMaterial.gNormalMap"].Map = new_name;
-                        mat.SamplerMap["mpCustomPerMaterial.gNormalMap"].Tex = texMgr.Get(new_name); ;
+                        mat.SamplerMap["mpCustomPerMaterial.gNormalMap"].SetTexture(texMgr.Get(new_name));
                     }
                     break;
                 }

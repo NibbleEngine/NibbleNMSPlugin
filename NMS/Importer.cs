@@ -294,9 +294,9 @@ namespace NibbleNMSPlugin
             
             mat.texMgr = input_texMgr;
             //TODO: Maybe I can check if the shader is compiled during registration
-            NbCore.Platform.Graphics.OpenGL.GLSLShaderConfig shader = EngineRef.CompileMaterialShader(mat, 
-                NbCore.Platform.Graphics.OpenGL.SHADER_MODE.DEFFERED);
-            EngineRef.renderSys.Renderer.AttachShaderToMaterial(mat, shader);
+            NbShader shader = EngineRef.CompileMaterialShader(mat, 
+                NbShaderMode.DEFFERED);
+            EngineRef.AttachShaderToMaterial(mat, shader);
             return mat;
         }
 
@@ -312,8 +312,7 @@ namespace NibbleNMSPlugin
                 case "gMasksMap":
                     sam.Name = "mpCustomPerMaterial." + ms.Name.Value;
                     sam.Map = ms.Map.Value;
-                    sam.texUnit = Util.MapTextureUnit[sam.Name];
-                    sam.SamplerID = Util.MapTexUnitToSampler[sam.Name];
+                    sam.State.SamplerID = Util.MapTexUnitToSampler[sam.Name];
                     break;
                 default:
                     Callbacks.Log("Not sure how to handle Sampler " + ms.Name.Value, LogVerbosityLevel.WARNING);
@@ -924,6 +923,7 @@ namespace NibbleNMSPlugin
             for (int i = 0; i < gobject.jointData.Count; i++)
             {
                 SceneMeshGroup.JointBindingDataList[i].invBindMatrix = gobject.jointData[i].invBindMatrix;
+                SceneMeshGroup.JointBindingDataList[i].BindMatrix = gobject.jointData[i].BindMatrix;
             }
 
             //Store JointBindingData from the geometry object to the scenegroup
@@ -1209,7 +1209,8 @@ namespace NibbleNMSPlugin
                         Hash = (ulong)mmd.GetHashCode() ^ (ulong)"CollisionMesh".GetHashCode(),
                         Type = NbMeshType.Collision,
                         Data = md,
-                        MetaData = mmd
+                        MetaData = mmd,
+                        Material = collisionMat
                     };
                 }
                 else if (collisionType == "CAPSULE")
@@ -1232,7 +1233,8 @@ namespace NibbleNMSPlugin
                         Hash = (ulong) mmd.GetHashCode() ^ (ulong) "CollisionCapsule".GetHashCode(),
                         Type = NbMeshType.Collision,
                         Data = md,
-                        MetaData = mmd
+                        MetaData = mmd,
+                        Material = collisionMat
                     };
                 }
                 else if (collisionType == "SPHERE")
@@ -1253,7 +1255,8 @@ namespace NibbleNMSPlugin
                         Hash = (ulong)mmd.GetHashCode() ^ (ulong)"CollisionSphere".GetHashCode(),
                         Type = NbMeshType.Collision,
                         Data = md,
-                        MetaData = mmd
+                        MetaData = mmd,
+                        Material = collisionMat
                     };
                 }
                 else if (collisionType == "BOX")
@@ -1276,7 +1279,8 @@ namespace NibbleNMSPlugin
                         Hash = (ulong)mmd.GetHashCode() ^ (ulong)"CollisionBox".GetHashCode(),
                         Type = NbMeshType.Collision,
                         Data = md,
-                        MetaData = mmd
+                        MetaData = mmd,
+                        Material = collisionMat
                     };
                 }
                 else

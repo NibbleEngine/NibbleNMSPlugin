@@ -78,16 +78,15 @@ namespace NibbleNMSPlugin
             }
 
             Texture diffTex = mixDiffuseTextures(tex_width, tex_height);
-            diffTex.Name = temp + "DDS";
+            diffTex.Path = temp + "DDS";
 
             FBO.dumpChannelToImage(fbo, ReadBufferMode.ColorAttachment0, "fbo_dump", tex_width, tex_height);
 
             Texture maskTex = mixMaskTextures(tex_width, tex_height);
-            maskTex.Name = temp + "MASKS.DDS";
+            maskTex.Path = temp + "MASKS.DDS";
 
             Texture normalTex = mixNormalTextures(tex_width, tex_height);
-            normalTex.Name = temp + "NORMAL.DDS";
-
+            normalTex.Path = temp + "NORMAL.DDS";
 
             //Bring Back screen
             GL.Viewport(0, 0, old_vp_size[2], old_vp_size[3]);
@@ -335,9 +334,8 @@ namespace NibbleNMSPlugin
 
             Engine engine = RenderState.engineRef;
 
-            GLSLShaderConfig shader = engine.GetShaderByType(SHADER_TYPE.TEXTURE_MIX_SHADER);
+            NbShader shader = engine.renderSys.ShaderMgr.GetShaderByType(NbShaderType.TEXTURE_MIX_SHADER);
             shader.ClearCurrentState();
-
 
             ////Base Layers
             int baseLayerIndex = 0;
@@ -365,7 +363,7 @@ namespace NibbleNMSPlugin
                     tex = dMask;
 
 
-                GLSLSamplerState s = new()
+                NbSamplerState s = new()
                 {
                     Target = tex.target,
                     TextureID = tex.texID
@@ -432,9 +430,8 @@ namespace NibbleNMSPlugin
 
             Engine engine = RenderState.engineRef;
 
-            GLSLShaderConfig shader = engine.GetShaderByType(SHADER_TYPE.TEXTURE_MIX_SHADER);
+            NbShader shader = engine.renderSys.ShaderMgr.GetShaderByType(NbShaderType.TEXTURE_MIX_SHADER);
             shader.ClearCurrentState();
-
 
             //Base Layers
             int baseLayerIndex = 0;
@@ -462,7 +459,7 @@ namespace NibbleNMSPlugin
                 else
                     tex = dMask;
 
-                GLSLSamplerState s = new()
+                NbSamplerState s = new()
                 {
                     Target = tex.target,
                     TextureID = tex.texID
@@ -481,7 +478,7 @@ namespace NibbleNMSPlugin
                     tex = dMask;
 
 
-                GLSLSamplerState s = new()
+                NbSamplerState s = new()
                 {
                     Target = NbTextureTarget.Texture2DArray,
                     TextureID = tex.texID
@@ -530,7 +527,7 @@ namespace NibbleNMSPlugin
 
             Engine engine = RenderState.engineRef;
 
-            GLSLShaderConfig shader = engine.GetShaderByType(SHADER_TYPE.TEXTURE_MIX_SHADER);
+            NbShader shader = engine.renderSys.ShaderMgr.GetShaderByType(NbShaderType.TEXTURE_MIX_SHADER);
             shader.ClearCurrentState();
 
             //Base Layers
@@ -560,7 +557,7 @@ namespace NibbleNMSPlugin
                     tex = dMask;
 
 
-                GLSLSamplerState s = new()
+                NbSamplerState s = new()
                 {
                     Target = tex.target,
                     TextureID = tex.texID
@@ -578,7 +575,7 @@ namespace NibbleNMSPlugin
                 else
                     tex = dMask;
 
-                GLSLSamplerState s = new()
+                NbSamplerState s = new()
                 {
                     Target = NbTextureTarget.Texture2DArray,
                     TextureID = tex.texID
