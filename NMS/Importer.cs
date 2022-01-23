@@ -291,11 +291,10 @@ namespace NibbleNMSPlugin
 
             //Make new material based on the template
             MeshMaterial mat = CreateMaterialFromStruct(template, input_texMgr);
-            
+            mat.ShaderConfig = EngineRef.GetShaderConfigByName("UberShader_Deferred");
             mat.texMgr = input_texMgr;
             //TODO: Maybe I can check if the shader is compiled during registration
-            NbShader shader = EngineRef.CompileMaterialShader(mat, 
-                NbShaderMode.DEFFERED);
+            NbShader shader = EngineRef.CompileMaterialShader(mat);
             EngineRef.AttachShaderToMaterial(mat, shader);
             return mat;
         }
