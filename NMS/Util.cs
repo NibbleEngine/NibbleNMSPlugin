@@ -21,12 +21,12 @@ namespace NibbleNMSPlugin
     {
         public static Dictionary<string, int> MapTexUnitToSampler = new()
         {
-            { "mpCustomPerMaterial.gDiffuseMap", 0 },
-            { "mpCustomPerMaterial.gMasksMap", 1 },
-            { "mpCustomPerMaterial.gNormalMap", 2 },
-            { "mpCustomPerMaterial.gDiffuse2Map", 3 },
-            { "mpCustomPerMaterial.gDetailDiffuseMap", 4 },
-            { "mpCustomPerMaterial.gDetailNormalMap", 5 }
+            { "gDiffuseMap", 0 },
+            { "gMasksMap", 1 },
+            { "gNormalMap", 2 },
+            { "gDiffuse2Map", 3 },
+            { "gDetailDiffuseMap", 4 },
+            { "gDetailNormalMap", 5 }
         };
 
 
@@ -127,9 +127,11 @@ namespace NibbleNMSPlugin
         public static Texture LoadNMSTexture(string path)
         {
             Stream s = FileUtils.LoadNMSFileStream(path);
+            if (s is null)
+                return null;
             byte[] data = new byte[s.Length];
             s.Read(data, 0, data.Length);
-
+            s.Close();
             return new Texture(data, true, path);
         }
 
@@ -147,6 +149,15 @@ namespace NibbleNMSPlugin
             else
             {
                 tex = LoadNMSTexture(sampler.Map);
+                if (tex is null)
+                {
+                    //Reset shader binding if no texture is loaded
+                    sampler.State.TextureID = -1;
+                    sampler.State.SamplerID = -1;
+                    sampler.State.ShaderBinding = "";
+                    return;
+                }
+                    
                 tex.palOpt = new PaletteOpt(false);
                 tex.procColor = new NbVector4(1.0f, 1.0f, 1.0f, 0.0f);
             }

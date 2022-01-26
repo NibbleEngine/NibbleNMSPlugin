@@ -309,9 +309,10 @@ namespace NibbleNMSPlugin
                 case "gNormalMap":
                 case "gDiffuse2Map":
                 case "gMasksMap":
-                    sam.Name = "mpCustomPerMaterial." + ms.Name.Value;
+                    sam.Name = ms.Name.Value;
                     sam.Map = ms.Map.Value;
                     sam.State.SamplerID = Util.MapTexUnitToSampler[sam.Name];
+                    sam.State.ShaderBinding = "mpCustomPerMaterial." + ms.Name.Value;
                     break;
                 default:
                     Callbacks.Log("Not sure how to handle Sampler " + ms.Name.Value, LogVerbosityLevel.WARNING);
@@ -392,11 +393,15 @@ namespace NibbleNMSPlugin
                         LogVerbosityLevel.WARNING);
                     continue;
                 }
-                
+
                 NbUniform uf = new()
                 {
                     Name = mu.Name,
-                    ID = MaterialUniformDict[mu.Name],
+                    State = new()
+                    {
+                        ShaderBinding = $"mpCustomPerMaterial.uniforms[{MaterialUniformDict[mu.Name]}]",
+                        Type = NbUniformType.Vector4,
+                    },
                     Values = new(mu.Values.x,
                                 mu.Values.y,
                                 mu.Values.z,
@@ -1049,7 +1054,9 @@ namespace NibbleNMSPlugin
                     LogVerbosityLevel.INFO);
 
                 //Configure boneRemap properly in the mesh metadata
-                mmd.BoneRemapIndicesCount = mmd.LastSkinMat - mmd.FirstSkinMat;
+                mmd.BoneRemapIndices = new int[mmd.LastSkinMat - mmd.FirstSkinMat];
+                for (int i=0; i<mmd.BoneRemapIndices.Length; i++)
+                    mmd.BoneRemapIndices[i] = gobject.boneRemap[mmd.FirstSkinMat + i];
                 
                 //Load Mesh Data
                 NbMeshData md = gobject.GetMeshData(mmd.Hash); //TODO: Check that function

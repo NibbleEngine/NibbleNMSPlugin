@@ -23,7 +23,6 @@ namespace NibbleNMSPlugin
         public static Stream LoadNMSFileStream(string filepath)
         {
             int load_mode = 0;
-
             string conv_filepath = filepath.TrimStart('/');
             filepath = filepath.Replace('\\', '/');
             string effective_filepath = filepath;
@@ -48,7 +47,7 @@ namespace NibbleNMSPlugin
             {
                 PluginState.PluginRef.Log("File: " + filepath + " Not found in PAKs or local folders. ", NbCore.Common.LogVerbosityLevel.ERROR);
                 NbCore.Common.Callbacks.showError("File: " + filepath + " Not found in PAKs or local folders. ", "Error");
-                throw new FileNotFoundException("File not found\n " + filepath);
+                return null;
             }
             switch (load_mode)
             {
