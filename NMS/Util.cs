@@ -124,7 +124,7 @@ namespace NibbleNMSPlugin
 
         //Texture Utilities
 
-        public static Texture LoadNMSTexture(string path)
+        public static NbTexture LoadNMSTexture(string path)
         {
             Stream s = FileUtils.LoadNMSFileStream(path);
             if (s is null)
@@ -132,7 +132,7 @@ namespace NibbleNMSPlugin
             byte[] data = new byte[s.Length];
             s.Read(data, 0, data.Length);
             s.Close();
-            return new Texture(data, true, path);
+            return new NbTexture(path, data);
         }
 
         public static void loadSamplerTexture(NbSampler sampler, TextureManager texMgr)
@@ -140,7 +140,7 @@ namespace NibbleNMSPlugin
             if (sampler.Map == "")
                 return;
 
-            Texture tex;
+            NbTexture tex;
             //Try to load the texture
             if (texMgr.HasTexture(sampler.Map))
             {

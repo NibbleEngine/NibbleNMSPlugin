@@ -21,9 +21,9 @@ namespace NibbleNMSPlugin
         //Local storage
         public static Dictionary<string, Dictionary<string, NbVector4>> palette = new();
         public static List<PaletteOpt> palOpts = new List<PaletteOpt>();
-        public static List<Texture> difftextures = new List<Texture>(8);
-        public static List<Texture> masktextures = new List<Texture>(8);
-        public static List<Texture> normaltextures = new List<Texture>(8);
+        public static List<NbTexture> difftextures = new List<NbTexture>(8);
+        public static List<NbTexture> masktextures = new List<NbTexture>(8);
+        public static List<NbTexture> normaltextures = new List<NbTexture>(8);
         public static float[] baseLayersUsed = new float[8];
         public static float[] alphaLayersUsed = new float[8];
         public static List<float[]> reColourings = new List<float[]>(8);
@@ -66,7 +66,7 @@ namespace NibbleNMSPlugin
             //Init framebuffer
             int tex_width = 0;
             int tex_height = 0;
-            Texture fbo_tex = null;
+            NbTexture fbo_tex = null;
             int fbo = -1;
 
             bool fbo_status = setupFrameBuffer(ref fbo, ref fbo_tex, ref tex_width, ref tex_height);
@@ -77,15 +77,15 @@ namespace NibbleNMSPlugin
                 return;
             }
 
-            Texture diffTex = mixDiffuseTextures(tex_width, tex_height);
+            NbTexture diffTex = mixDiffuseTextures(tex_width, tex_height);
             diffTex.Path = temp + "DDS";
 
             FBO.dumpChannelToImage(fbo, ReadBufferMode.ColorAttachment0, "fbo_dump", tex_width, tex_height);
 
-            Texture maskTex = mixMaskTextures(tex_width, tex_height);
+            NbTexture maskTex = mixMaskTextures(tex_width, tex_height);
             maskTex.Path = temp + "MASKS.DDS";
 
-            Texture normalTex = mixNormalTextures(tex_width, tex_height);
+            NbTexture normalTex = mixNormalTextures(tex_width, tex_height);
             normalTex.Path = temp + "NORMAL.DDS";
 
             //Bring Back screen
@@ -180,7 +180,7 @@ namespace NibbleNMSPlugin
                     try
                     {
                         //Get NMS texture data
-                        Texture tex = Util.LoadNMSTexture(partNameDiff);
+                        NbTexture tex = Util.LoadNMSTexture(partNameDiff);
                         tex.palOpt = palOpt;
                         tex.procColor = palColor;
                         //Store to master texture manager
@@ -202,7 +202,7 @@ namespace NibbleNMSPlugin
                 else
                 //Load texture from dict
                 {
-                    Texture tex = texMgr.Get(partNameDiff);
+                    NbTexture tex = texMgr.Get(partNameDiff);
                     //Save Texture to material
                     difftextures[i] = tex;
                     baseLayersUsed[i] = 1.0f;
@@ -219,7 +219,7 @@ namespace NibbleNMSPlugin
                     //Configure Mask
                     try
                     {
-                        Texture texmask = Util.LoadNMSTexture(partNameMask);
+                        NbTexture texmask = Util.LoadNMSTexture(partNameMask);
                         //Store to master texture manager
                         texMgr.AddTexture(texmask);
                         //Store Texture to material
@@ -237,7 +237,7 @@ namespace NibbleNMSPlugin
                 else
                 //Load texture from dict
                 {
-                    Texture tex = texMgr.Get(partNameMask);
+                    NbTexture tex = texMgr.Get(partNameMask);
                     //Store Texture to material
                     masktextures[i] = tex;
                     alphaLayersUsed[i] = 1.0f;
@@ -254,7 +254,7 @@ namespace NibbleNMSPlugin
                 {
                     try
                     {
-                        Texture texnormal = Util.LoadNMSTexture(partNameNormal);
+                        NbTexture texnormal = Util.LoadNMSTexture(partNameNormal);
                         //Store to master texture manager
                         texMgr.AddTexture(texnormal);
                         //Store Texture to material
@@ -269,21 +269,21 @@ namespace NibbleNMSPlugin
                 else
                 //Load texture from dict
                 {
-                    Texture tex = texMgr.Get(partNameNormal);
+                    NbTexture tex = texMgr.Get(partNameNormal);
                     //Store Texture to material
                     normaltextures[i] = tex;
                 }
             }
         }
 
-        private static bool setupFrameBuffer(ref int fbo, ref Texture fbo_tex, ref int texWidth, ref int texHeight)
+        private static bool setupFrameBuffer(ref int fbo, ref NbTexture fbo_tex, ref int texWidth, ref int texHeight)
         {
             for (int i = 0; i < 8; i++)
             {
                 if (difftextures[i] != null)
                 {
-                    texHeight = difftextures[i].Height;
-                    texWidth = difftextures[i].Width;
+                    texHeight = difftextures[i].Data.Height;
+                    texWidth = difftextures[i].Data.Width;
                     break;
                 }
             }
@@ -322,15 +322,15 @@ namespace NibbleNMSPlugin
         }
 
         
-        public static Texture mixDiffuseTextures(int texWidth, int texHeight)
+        public static NbTexture mixDiffuseTextures(int texWidth, int texHeight)
         {
             //Upload Textures
 
             //BIND TEXTURES
-            Texture tex;
-            
-            Texture dMask = RenderState.engineRef.GetTexture("default_mask.dds");
-            Texture dDiff = RenderState.engineRef.GetTexture("default.dds");
+            NbTexture tex;
+
+            NbTexture dMask = RenderState.engineRef.GetTexture("default_mask.dds");
+            NbTexture dDiff = RenderState.engineRef.GetTexture("default.dds");
 
             Engine engine = RenderState.engineRef;
 
@@ -365,7 +365,7 @@ namespace NibbleNMSPlugin
 
                 NbSamplerState s = new()
                 {
-                    Target = tex.target,
+                    Target = tex.Data.target,
                     TextureID = tex.texID
                 };
 
@@ -394,39 +394,39 @@ namespace NibbleNMSPlugin
             renderSystem.Renderer.RenderQuad(renderSystem.GeometryMgr.GetPrimitiveMesh((ulong) "default_renderquad".GetHashCode()),
                 shader, shader.CurrentState);
 
-            
+
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());
-            Texture out_tex_diffuse = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba8, texWidth, texHeight, PixelFormat.Rgba, PixelType.UnsignedByte, true);
+            NbTexture out_tex_diffuse = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba8, texWidth, texHeight, PixelFormat.Rgba, PixelType.UnsignedByte, true);
             GraphicsAPI.setupTextureParameters(out_tex_diffuse, (int)TextureWrapMode.Repeat,
                 (int)TextureMagFilter.Linear, (int)TextureMinFilter.LinearMipmapLinear, 4.0f);
             
             //Copy the read buffers to the 
-            GL.BindTexture(GraphicsAPI.TextureTargetMap[out_tex_diffuse.target], out_tex_diffuse.texID);
+            GL.BindTexture(GraphicsAPI.TextureTargetMap[out_tex_diffuse.Data.target], out_tex_diffuse.texID);
             GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
-            Callbacks.Assert(out_tex_diffuse.target == NbTextureTarget.Texture2D,
+            Callbacks.Assert(out_tex_diffuse.Data.target == NbTextureTarget.Texture2D,
                             "fbo texture target is not correct");
-            GL.CopyTexSubImage2D(GraphicsAPI.TextureTargetMap[out_tex_diffuse.target], 0, 0, 0, 0, 0, texWidth, texHeight);
+            GL.CopyTexSubImage2D(GraphicsAPI.TextureTargetMap[out_tex_diffuse.Data.target], 0, 0, 0, 0, 0, texWidth, texHeight);
             GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
             
             //Find name for textures
 
 #if (DUMP_TEXTURES)
             GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
-            Texture.dump_texture(out_tex_diffuse, "diffuse");
+            GraphicsAPI.DumpTexture(out_tex_diffuse, "diffuse");
 #endif
             return out_tex_diffuse;
         }
 
-        private static Texture mixMaskTextures(int texWidth, int texHeight)
+        private static NbTexture mixMaskTextures(int texWidth, int texHeight)
         {
             //Upload Textures
 
             //BIND TEXTURES
-            Texture tex;
-            
+            NbTexture tex;
 
-            Texture dMask = RenderState.engineRef.GetTexture("default_mask.dds");
-            Texture dDiff = RenderState.engineRef.GetTexture("default.dds");
+
+            NbTexture dMask = RenderState.engineRef.GetTexture("default_mask.dds");
+            NbTexture dDiff = RenderState.engineRef.GetTexture("default.dds");
 
             Engine engine = RenderState.engineRef;
 
@@ -461,7 +461,7 @@ namespace NibbleNMSPlugin
 
                 NbSamplerState s = new()
                 {
-                    Target = tex.target,
+                    Target = tex.Data.target,
                     TextureID = tex.texID
                 };
 
@@ -496,14 +496,14 @@ namespace NibbleNMSPlugin
                 shader, shader.CurrentState);
 
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());
-            Texture out_tex_mask = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba8, texWidth, texHeight, 1, PixelFormat.Rgba, PixelType.UnsignedByte, true);
+            NbTexture out_tex_mask = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba8, texWidth, texHeight, 1, PixelFormat.Rgba, PixelType.UnsignedByte, true);
             GraphicsAPI.setupTextureParameters(out_tex_mask, (int)TextureWrapMode.Repeat,
                 (int)TextureMagFilter.Linear, (int)TextureMinFilter.LinearMipmapLinear, 4.0f);
             
             //Copy the read buffers to the 
-            GL.BindTexture(GraphicsAPI.TextureTargetMap[out_tex_mask.target], out_tex_mask.texID);
+            GL.BindTexture(GraphicsAPI.TextureTargetMap[out_tex_mask.Data.target], out_tex_mask.texID);
             GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
-            GL.CopyTexSubImage2D(GraphicsAPI.TextureTargetMap[out_tex_mask.target], 0, 0, 0, 0, 0, texWidth, texHeight);
+            GL.CopyTexSubImage2D(GraphicsAPI.TextureTargetMap[out_tex_mask.Data.target], 0, 0, 0, 0, 0, texWidth, texHeight);
             GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 
             
@@ -514,15 +514,15 @@ namespace NibbleNMSPlugin
             return out_tex_mask;
         }
 
-        private static Texture mixNormalTextures(int texWidth, int texHeight)
+        private static NbTexture mixNormalTextures(int texWidth, int texHeight)
         {
             //Upload Textures
 
             //BIND TEXTURES
-            Texture tex;
-            
-            Texture dMask = RenderState.engineRef.GetTexture("default_mask.dds");
-            Texture dDiff = RenderState.engineRef.GetTexture("default.dds");
+            NbTexture tex;
+
+            NbTexture dMask = RenderState.engineRef.GetTexture("default_mask.dds");
+            NbTexture dDiff = RenderState.engineRef.GetTexture("default.dds");
 
 
             Engine engine = RenderState.engineRef;
@@ -559,7 +559,7 @@ namespace NibbleNMSPlugin
 
                 NbSamplerState s = new()
                 {
-                    Target = tex.target,
+                    Target = tex.Data.target,
                     TextureID = tex.texID
                 };
 
@@ -594,7 +594,7 @@ namespace NibbleNMSPlugin
 
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());
 
-            Texture out_tex_normal = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba8, texWidth, texHeight, 1, PixelFormat.Rgba, PixelType.UnsignedByte, true);
+            NbTexture out_tex_normal = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba8, texWidth, texHeight, 1, PixelFormat.Rgba, PixelType.UnsignedByte, true);
             GraphicsAPI.setupTextureParameters(out_tex_normal, (int)TextureWrapMode.Repeat,
                 (int)TextureMagFilter.Linear, (int)TextureMinFilter.LinearMipmapLinear, 4.0f);
             
@@ -607,7 +607,7 @@ namespace NibbleNMSPlugin
 
 #if (DUMP_TEXTURES)
             GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
-            Texture.dump_texture(out_tex_normal, "normal");
+            GraphicsAPI.DumpTexture(out_tex_normal, "normal");
 #endif
             return out_tex_normal;
         }
