@@ -209,6 +209,7 @@ namespace NibbleNMSPlugin
 
                     TkProceduralTexture texture = textures[sel];
                     string partName = texture.Diffuse;
+
                     parts[layerid] = texture;
                     //addToStr(ref parts, partName);
                 }

@@ -53,7 +53,7 @@ namespace NibbleNMSPlugin
     public static class PluginState
     {
         public static NMSPlugin PluginRef;
-        public static Random Randgen = new Random();
+        public static Random Randgen = new Random(0x10);
     }
 
     public class NMSPlugin : PluginBase
@@ -207,6 +207,35 @@ namespace NibbleNMSPlugin
             
             //Add Defaults
             AddDefaultTextures();
+            AddDefaultShaders();
+        }
+
+        private void AddDefaultShaders()
+        {
+            //Add Shader Sources
+            GLSLShaderSource vs = EngineRef.GetShaderSourceByFilePath("Shaders/texture_mixer_VS.glsl");
+            if (vs == null)
+                vs = new("Shaders/texture_mixer_VS.glsl", true);
+            
+            GLSLShaderSource fs = EngineRef.GetShaderSourceByFilePath("Shaders/texture_mixer_FS.glsl");
+            if (fs == null)
+                fs = new("Shaders/texture_mixer_FS.glsl", true);
+
+            //Texture Mixing Shader
+            GLSLShaderConfig conf = EngineRef.CreateShaderConfig(vs, fs,
+                                      null, null, null,
+                                      new() { }, NbShaderMode.DEFFERED, "TextureMix");
+            EngineRef.RegisterEntity(conf);
+
+
+            //Compile Shader
+            NbShader shader = new()
+            {
+                Type = NbShaderType.TEXTURE_MIX_SHADER
+            };
+            NbCore.Platform.Graphics.GraphicsAPI.CompileShader(ref shader, conf);
+            EngineRef.RegisterEntity(shader);
+
         }
 
         private void AddDefaultTextures()
@@ -230,7 +259,10 @@ namespace NibbleNMSPlugin
             SceneGraphNode root = Importer.ImportScene(filepath);
             EngineRef.ClearActiveSceneGraph();
             EngineRef.ImportScene(root);
-            
+
+
+            //Dispose Unused Assets
+            Importer.ClearState();
             Callbacks.updateStatus("Ready");
         }
 

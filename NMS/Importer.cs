@@ -46,7 +46,14 @@ namespace NibbleNMSPlugin
             localAnimationDataDictionary.Clear();
             localMaterialDictionary.Clear();
             ImportedSceneCounter = 0;
-            //localTexMgr.CleanUp(); //TODO: Do I still need this?
+            foreach(NbTexture tex in localTexMgr.Entities)
+            {
+                if (tex.Refs == 0)
+                    tex.Dispose();
+            }
+            localTexMgr.Entities.Clear();
+            localTexMgr.EntityMap.Clear();
+            localTexMgr.TextureMap.Clear();
         }
 
         public static void SetEngineReference(Engine engine)
@@ -323,12 +330,15 @@ namespace NibbleNMSPlugin
             string[] split = ms.Map.Value.Split('.');
             
             string temp = "";
-            if (sam.Name == "mpCustomPerMaterial.gDiffuseMap")
+            if (sam.Name == "gDiffuseMap")
             {
                 //Check if the sampler describes a proc gen texture
                 temp = split[0];
                 //Construct main filename
-                
+
+                if (sam.Map.Contains("ACC_EAR1"))
+                    Console.WriteLine("Test");
+
                 string texMbin = temp + ".TEXTURE.MBIN";
                 
                 //Detect Procedural Texture
@@ -1142,7 +1152,7 @@ namespace NibbleNMSPlugin
                     backup_localMaterialDictionary[pair.Key] = pair.Value;
 
                 //Clear State
-                localTexMgr = new();
+                //localTexMgr = new();
                 localAnimationDataDictionary.Clear();
                 localMaterialDictionary.Clear();
 
@@ -1151,7 +1161,7 @@ namespace NibbleNMSPlugin
 
                 //Restore State
                 SceneMeshGroup = backup_SceneMeshGroup;
-                localTexMgr = backup_localTexMgr;
+                //localTexMgr = backup_localTexMgr;
                 localMaterialDictionary.Clear();
                 foreach (var pair in backup_localMaterialDictionary)
                     localMaterialDictionary[pair.Key] = pair.Value;

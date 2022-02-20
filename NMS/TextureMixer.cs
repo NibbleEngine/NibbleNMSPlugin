@@ -93,11 +93,8 @@ namespace NibbleNMSPlugin
             GL.DeleteFramebuffer(fbo);
 
             //Delete Fraomebuffer Textures
-            //TODO: maybe dispose the texture here?
-            GL.DeleteTexture(fbo_tex.texID);
-
-            //Delete Framebuffer Texture
-
+            fbo_tex.Dispose();
+            
 
             //Add the new procedural textures to the textureManager
             texMgr.AddTexture(diffTex);
@@ -124,8 +121,9 @@ namespace NibbleNMSPlugin
             {
                 if (texList[i] != null)
                 {
-                    string partNameDiff = texList[i].Diffuse;
-                    Callbacks.Log(partNameDiff, LogVerbosityLevel.INFO);
+                    Callbacks.Log(texList[i].Diffuse, LogVerbosityLevel.INFO);
+                    Callbacks.Log(texList[i].Mask, LogVerbosityLevel.INFO);
+                    Callbacks.Log(texList[i].Normal, LogVerbosityLevel.INFO);
                 }
             }
 
@@ -479,7 +477,7 @@ namespace NibbleNMSPlugin
 
                 NbSamplerState s = new()
                 {
-                    Target = NbTextureTarget.Texture2DArray,
+                    Target = tex.Data.target,
                     TextureID = tex.texID
                 };
 
@@ -495,7 +493,7 @@ namespace NibbleNMSPlugin
                 shader, shader.CurrentState);
 
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());
-            NbTexture out_tex_mask = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba8, texWidth, texHeight, 1, PixelFormat.Rgba, PixelType.UnsignedByte, true);
+            NbTexture out_tex_mask = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba8, texWidth, texHeight, PixelFormat.Rgba, PixelType.UnsignedByte, true);
             GraphicsAPI.setupTextureParameters(out_tex_mask, (int)TextureWrapMode.Repeat,
                 (int)TextureMagFilter.Linear, (int)TextureMinFilter.LinearMipmapLinear, 4.0f);
             
@@ -506,9 +504,9 @@ namespace NibbleNMSPlugin
             GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 
             
-#if (DUMP_TEXTURESNONO)
+#if (DUMP_TEXTURES)
             GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
-            Sampler.dump_texture("mask", texWidth, texHeight);
+            GraphicsAPI.DumpTexture(out_tex_mask, "mask");
 #endif
             return out_tex_mask;
         }
@@ -576,7 +574,7 @@ namespace NibbleNMSPlugin
 
                 NbSamplerState s = new()
                 {
-                    Target = NbTextureTarget.Texture2DArray,
+                    Target = tex.Data.target,
                     TextureID = tex.texID
                 };
 
@@ -593,7 +591,7 @@ namespace NibbleNMSPlugin
 
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());
 
-            NbTexture out_tex_normal = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba8, texWidth, texHeight, 1, PixelFormat.Rgba, PixelType.UnsignedByte, true);
+            NbTexture out_tex_normal = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba8, texWidth, texHeight, PixelFormat.Rgba, PixelType.UnsignedByte, true);
             GraphicsAPI.setupTextureParameters(out_tex_normal, (int)TextureWrapMode.Repeat,
                 (int)TextureMagFilter.Linear, (int)TextureMinFilter.LinearMipmapLinear, 4.0f);
             
