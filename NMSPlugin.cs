@@ -212,8 +212,10 @@ namespace NibbleNMSPlugin
         private void AddDefaultTextures()
         {
             Assembly currentAssembly = Assembly.GetExecutingAssembly();
-            EngineRef.AddTexture(Callbacks.getResourceFromAssembly(currentAssembly, "default.dds"), "default.dds");
-            EngineRef.AddTexture(Callbacks.getResourceFromAssembly(currentAssembly, "default_mask.dds"), "default_mask.dds");
+            NbTexture tex = EngineRef.CreateTexture(Callbacks.getResourceFromAssembly(currentAssembly, "default.dds"), "default.dds");
+            EngineRef.AddTexture(tex);
+            tex = EngineRef.CreateTexture(Callbacks.getResourceFromAssembly(currentAssembly, "default_mask.dds"), "default_mask.dds");
+            EngineRef.AddTexture(tex);
         }
         
         public override void Import(string filepath)

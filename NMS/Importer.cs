@@ -937,17 +937,6 @@ namespace NibbleNMSPlugin
             SceneGraphNode root = CreateNodeFromTemplate(template, gobject, null, null);
             gobject.Dispose();
 
-            //Mark dynamic nodes if joints exist
-            SceneComponent sc = root.GetComponent<SceneComponent>() as SceneComponent;
-            if (sc.JointNodes.Count > 0)
-            {
-                foreach (SceneGraphNode node in sc.Nodes)
-                {
-                    TransformComponent tc = node.GetComponent<TransformComponent>() as TransformComponent;
-                    tc.IsControllable = true;
-                }
-            }
-    
             return root;
         }
 

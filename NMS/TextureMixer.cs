@@ -5,11 +5,10 @@ using System.Collections.Generic;
 using System.Text;
 using OpenTK;
 using NbCore.Math;
-using NbCore.Platform.Graphics.OpenGL;
+using NbCore.Platform.Graphics;
 using OpenTK.Graphics.OpenGL4;
 using NbCore;
 using NbCore.Common;
-using NbCore.Utils;
 using libMBIN.NMS.Toolkit;
 using System.Diagnostics;
 

@@ -132,7 +132,7 @@ namespace NibbleNMSPlugin
             byte[] data = new byte[s.Length];
             s.Read(data, 0, data.Length);
             s.Close();
-            return new NbTexture(path, data);
+            return PluginState.PluginRef.EngineRef.CreateTexture(data, path, false);
         }
 
         public static void loadSamplerTexture(NbSampler sampler, TextureManager texMgr)
