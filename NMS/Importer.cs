@@ -46,14 +46,14 @@ namespace NibbleNMSPlugin
             localAnimationDataDictionary.Clear();
             localMaterialDictionary.Clear();
             ImportedSceneCounter = 0;
-            foreach(NbTexture tex in localTexMgr.Entities)
+
+            //Manual Dispose of non used textures
+            foreach (NbTexture tex in localTexMgr.TextureMap.Values)
             {
                 if (tex.Refs == 0)
                     tex.Dispose();
             }
-            localTexMgr.Entities.Clear();
-            localTexMgr.EntityMap.Clear();
-            localTexMgr.TextureMap.Clear();
+            localTexMgr.CleanUp();
         }
 
         public static void SetEngineReference(Engine engine)
@@ -299,7 +299,7 @@ namespace NibbleNMSPlugin
             //Make new material based on the template
             MeshMaterial mat = CreateMaterialFromStruct(template, input_texMgr);
             mat.ShaderConfig = EngineRef.GetShaderConfigByName("UberShader_Deferred");
-            mat.texMgr = input_texMgr;
+            
             //TODO: Maybe I can check if the shader is compiled during registration
             NbShader shader = EngineRef.CompileMaterialShader(mat);
             EngineRef.AttachShaderToMaterial(mat, shader);
@@ -329,24 +329,27 @@ namespace NibbleNMSPlugin
             //Save texture to material
             string[] split = ms.Map.Value.Split('.');
             
-            string temp = "";
-            if (sam.Name == "gDiffuseMap")
+            if (!texMgr.HasTexture(sam.Map))
             {
-                //Check if the sampler describes a proc gen texture
-                temp = split[0];
-                //Construct main filename
+                string temp = "";
+                if (sam.Name == "gDiffuseMap")
+                {
+                    //Check if the sampler describes a proc gen texture
+                    temp = split[0];
+                    //Construct main filename
 
-                if (sam.Map.Contains("ACC_EAR1"))
-                    Console.WriteLine("Test");
+                    if (sam.Map.Contains("ACC_EAR1"))
+                        Console.WriteLine("Test");
 
-                string texMbin = temp + ".TEXTURE.MBIN";
-                
-                //Detect Procedural Texture
-                if (FileUtils.NMSFileToArchiveMap.Keys.Contains(texMbin))
-                { 
-                    TextureMixer.combineTextures(sam.Map, Palettes.paletteSel, ref texMgr);
-                    //Override Map
-                    sam.isProcGen = true;
+                    string texMbin = temp + ".TEXTURE.MBIN";
+
+                    //Detect Procedural Texture
+                    if (FileUtils.NMSFileToArchiveMap.Keys.Contains(texMbin))
+                    {
+                        TextureMixer.combineTextures(sam.Map, Palettes.paletteSel, ref texMgr);
+                        //Override Map
+                        sam.isProcGen = true;
+                    }
                 }
             }
 
@@ -745,8 +748,11 @@ namespace NibbleNMSPlugin
                     vs_size = br.ReadUInt32(),
                     vs_abs_offset = br.ReadUInt32(),
                     is_size = br.ReadUInt32(),
-                    is_abs_offset = br.ReadUInt32()
+                    is_abs_offset = br.ReadUInt32(),
+                    double_buffering = br.ReadBoolean()
                 };
+                //Align offset to 0x10
+                br.BaseStream.Seek(16 - br.BaseStream.Position % 16, SeekOrigin.Current);
                 geom.meshMetaDataDict[mmd.hash] = mmd;
                 PluginState.PluginRef.Log(mmd.name, LogVerbosityLevel.INFO);
             }
@@ -891,7 +897,7 @@ namespace NibbleNMSPlugin
                 gfs = FileUtils.LoadNMSFileStream(gstreamfile);
 
                 FileStream gffs = new FileStream("testfilegeom.mbin", FileMode.Create);
-                gfs.CopyTo(gffs);
+                fs.CopyTo(gffs);
                 gffs.Close();
 
                 if (fs is null)
@@ -1145,7 +1151,6 @@ namespace NibbleNMSPlugin
 
                 //Keep Old Import State so that we can bring it back
                 NbMeshGroup backup_SceneMeshGroup = SceneMeshGroup;
-                TextureManager backup_localTexMgr = localTexMgr;
                 Dictionary<string, SceneGraphNode> backup_localJointDictionary = new();
                 Dictionary<string, MeshMaterial> backup_localMaterialDictionary = new();
                 foreach (var pair in localMaterialDictionary)

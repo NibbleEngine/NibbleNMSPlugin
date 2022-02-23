@@ -95,7 +95,6 @@ namespace NibbleNMSPlugin
             //Delete Fraomebuffer Textures
             fbo_tex.Dispose();
             
-
             //Add the new procedural textures to the textureManager
             texMgr.AddTexture(diffTex);
             texMgr.AddTexture(maskTex);

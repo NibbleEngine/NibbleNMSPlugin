@@ -260,7 +260,6 @@ namespace NibbleNMSPlugin
             EngineRef.ClearActiveSceneGraph();
             EngineRef.ImportScene(root);
 
-
             //Dispose Unused Assets
             Importer.ClearState();
             Callbacks.updateStatus("Ready");

@@ -33,7 +33,7 @@ namespace NibbleNMSPlugin
         public static string queryLibMBINDLLLocalVersion()
         {
             string assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string assemblyLoc = Path.Combine(assemblyDir, "Plugins", "libMBIN.dll");
+            string assemblyLoc = Path.Combine(assemblyDir, "libMBIN.dll");
             string assemblyVersion = Assembly.LoadFile(assemblyLoc).GetName().Version.ToString();
 
             return assemblyVersion;
@@ -41,11 +41,12 @@ namespace NibbleNMSPlugin
 
         public static void DownloadLibMBIN(string downloadUrl)
         {
+            string assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             if (downloadUrl != "")
             {
-                if (File.Exists("libMBIN_old.dll"))
-                    File.Delete("libMBIN_old.dll");
-                File.Move("libMBIN.dll", "libMBIN_old.dll");
+                if (File.Exists(Path.Combine(assemblyDir, "libMBIN_old.dll")))
+                    File.Delete(Path.Combine(assemblyDir, "libMBIN_old.dll"));
+                File.Move(Path.Combine(assemblyDir, "libMBIN.dll"), Path.Combine(assemblyDir, "libMBIN_old.dll"));
 
                 try
                 {
@@ -53,14 +54,14 @@ namespace NibbleNMSPlugin
                         NbCore.Common.LogVerbosityLevel.INFO);
                     using (var client = new WebClient())
                     {
-                        client.DownloadFile(downloadUrl, "libMBIN.dll");
+                        client.DownloadFile(downloadUrl, Path.Combine(assemblyDir, "libMBIN.dll"));
                     }
                     PluginState.PluginRef.Log("libMBIN.dll Downloaded. Please Restart.", NbCore.Common.LogVerbosityLevel.INFO);
                 }
                 catch
                 {
                     //Restore the old file if the download was interrupted
-                    File.Move("libMBIN_old.dll", "libMBIN.dll");
+                    File.Move(Path.Combine(assemblyDir, "libMBIN_old.dll"), Path.Combine(assemblyDir, "libMBIN.dll"));
                 }
 
             }
