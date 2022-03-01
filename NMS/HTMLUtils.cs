@@ -51,12 +51,12 @@ namespace NibbleNMSPlugin
                 try
                 {
                     PluginState.PluginRef.Log(string.Format("Downloading libMbin from {0}", downloadUrl),
-                        NbCore.Common.LogVerbosityLevel.INFO);
+                        NbCore.LogVerbosityLevel.INFO);
                     using (var client = new WebClient())
                     {
                         client.DownloadFile(downloadUrl, Path.Combine(assemblyDir, "libMBIN.dll"));
                     }
-                    PluginState.PluginRef.Log("libMBIN.dll Downloaded. Please Restart.", NbCore.Common.LogVerbosityLevel.INFO);
+                    PluginState.PluginRef.Log("libMBIN.dll Downloaded. Please Restart.", NbCore.LogVerbosityLevel.INFO);
                 }
                 catch
                 {

@@ -92,7 +92,7 @@ namespace NibbleNMSPlugin
                 }
                 catch (ArgumentOutOfRangeException)
                 {
-                    Callbacks.Log("Missing Options for Palette " + f.Name, LogVerbosityLevel.WARNING);
+                    PluginState.PluginRef.Log("Missing Options for Palette " + f.Name, LogVerbosityLevel.WARNING);
                     //Choose the first color in all cases that the palette files have not been properly imported
                     newPal[f.Name]["Primary"] = new NbVector4(palette[0], 1.0f);
                     newPal[f.Name]["Alternative1"] = new NbVector4(palette[0], 1.0f);
@@ -117,7 +117,7 @@ namespace NibbleNMSPlugin
 
             if (template == null)
             {
-                Callbacks.Log("Using Default Palettes", LogVerbosityLevel.WARNING);
+                PluginState.PluginRef.Log("Using Default Palettes", LogVerbosityLevel.WARNING);
                 return createPalette();
             }
             
@@ -127,7 +127,7 @@ namespace NibbleNMSPlugin
             for (int i = 0; i < template.Palettes.Length; i++)
             {
                 string pal_name = ((TkPaletteTexture.PaletteEnum) i).ToString();
-                Callbacks.Log(string.Format("Palette {0} NumColors {1}", pal_name, template.Palettes[i].NumColours),
+                PluginState.PluginRef.Log(string.Format("Palette {0} NumColors {1}", pal_name, template.Palettes[i].NumColours),
                     LogVerbosityLevel.INFO);
                 newPal[pal_name] = new Dictionary<string, NbVector4>();
 

@@ -45,7 +45,7 @@ namespace NibbleNMSPlugin
             }
             else
             {
-                PluginState.PluginRef.Log("File: " + filepath + " Not found in PAKs or local folders. ", NbCore.Common.LogVerbosityLevel.ERROR);
+                PluginState.PluginRef.Log("File: " + filepath + " Not found in PAKs or local folders. ", NbCore.LogVerbosityLevel.ERROR);
                 NbCore.Common.Callbacks.showError("File: " + filepath + " Not found in PAKs or local folders. ", "Error");
                 return null;
             }
@@ -57,11 +57,11 @@ namespace NibbleNMSPlugin
                     return new FileStream(Path.Combine(settings.UnpackDir, filepath), FileMode.Open);
                 case 2: //Load File from Archive
                     {
-                        PluginState.PluginRef.Log("Trying to export File" + effective_filepath, NbCore.Common.LogVerbosityLevel.INFO);
+                        PluginState.PluginRef.Log("Trying to export File" + effective_filepath, NbCore.LogVerbosityLevel.INFO);
                         if (NMSFileToArchiveMap.ContainsKey(effective_filepath))
                         {
                             PluginState.PluginRef.Log("File was found in archives. File Index: " + NMSFileToArchiveMap[effective_filepath].GetFileIndex(effective_filepath),
-                                NbCore.Common.LogVerbosityLevel.INFO);
+                                NbCore.LogVerbosityLevel.INFO);
                         }
 
                         int fileIndex = NMSFileToArchiveMap[effective_filepath].GetFileIndex(effective_filepath);
@@ -98,7 +98,7 @@ namespace NibbleNMSPlugin
             }
             else
             {
-                NbCore.Common.Callbacks.Log("File: " + filepath + " Not found in PAKs or local folders. ", NbCore.Common.LogVerbosityLevel.ERROR);
+                PluginState.PluginRef.Log("File: " + filepath + " Not found in PAKs or local folders. ", NbCore.LogVerbosityLevel.ERROR);
                 NbCore.Common.Callbacks.showError("File: " + filepath + " Not found in PAKs or local folders. ", "Error");
                 return null;
             }
@@ -163,11 +163,11 @@ namespace NibbleNMSPlugin
         }
         public static void loadNMSArchives(NMSPlugin plugin, string gameDir, ref bool file_open_enable)
         {
-            plugin.Log("Trying to load PAK files from " + gameDir, NbCore.Common.LogVerbosityLevel.INFO);
+            plugin.Log("Trying to load PAK files from " + gameDir, NbCore.LogVerbosityLevel.INFO);
             if (!Directory.Exists(gameDir))
             {
                 plugin.Log("Unable to locate game Directory. PAK files (Vanilla + Mods) not loaded. You can still work using unpacked files", 
-                    NbCore.Common.LogVerbosityLevel.ERROR);
+                    NbCore.LogVerbosityLevel.ERROR);
                 file_open_enable = false;
                 return;
             }
@@ -189,13 +189,13 @@ namespace NibbleNMSPlugin
                 {
                     FileStream arc_stream = new FileStream(pak_path, FileMode.Open);
                     libPSARC.PSARC.Archive psarc = new libPSARC.PSARC.Archive(arc_stream, true);
-                    plugin.Log("Loaded :" + pak_path, NbCore.Common.LogVerbosityLevel.INFO);
+                    plugin.Log("Loaded :" + pak_path, NbCore.LogVerbosityLevel.INFO);
                     NMSArchiveMap[pak_path] = psarc;
                 }
                 catch (Exception ex)
                 {
-                    plugin.Log("Pak file " + pak_path + " failed to load", NbCore.Common.LogVerbosityLevel.ERROR);
-                    plugin.Log("Error : " + ex.GetType().Name + " " + ex.Message, NbCore.Common.LogVerbosityLevel.ERROR);
+                    plugin.Log("Pak file " + pak_path + " failed to load", NbCore.LogVerbosityLevel.ERROR);
+                    plugin.Log("Error : " + ex.GetType().Name + " " + ex.Message, NbCore.LogVerbosityLevel.ERROR);
                 }
             }
 
@@ -206,7 +206,7 @@ namespace NibbleNMSPlugin
                 foreach (string pak_path in pak_files)
                 {
                     if (pak_path.Contains("CUSTOMMODELS"))
-                        plugin.Log(pak_path, NbCore.Common.LogVerbosityLevel.INFO);
+                        plugin.Log(pak_path, NbCore.LogVerbosityLevel.INFO);
 
                     if (!pak_path.EndsWith(".pak"))
                         continue;
@@ -219,8 +219,8 @@ namespace NibbleNMSPlugin
                     }
                     catch (Exception ex)
                     {
-                        plugin.Log("Pak file " + pak_path + " failed to load", NbCore.Common.LogVerbosityLevel.ERROR);
-                        plugin.Log("Error : " + ex.GetType().Name + " " + ex.Message, NbCore.Common.LogVerbosityLevel.ERROR);
+                        plugin.Log("Pak file " + pak_path + " failed to load", NbCore.LogVerbosityLevel.ERROR);
+                        plugin.Log("Error : " + ex.GetType().Name + " " + ex.Message, NbCore.LogVerbosityLevel.ERROR);
                     }
                 }
             }
@@ -228,7 +228,7 @@ namespace NibbleNMSPlugin
             if (NMSArchiveMap.Keys.Count == 0)
             {
                 plugin.Log("No pak files found. Not creating/reading manifest file.", 
-                    NbCore.Common.LogVerbosityLevel.WARNING);
+                    NbCore.LogVerbosityLevel.WARNING);
                 return;
             }
 
@@ -286,11 +286,11 @@ namespace NibbleNMSPlugin
             val = fetchSteamGameInstallationDir() as string;
             if (val != null)
             {
-                NbCore.Common.Callbacks.Log("Found Steam Version: " + val, NbCore.Common.LogVerbosityLevel.INFO);
+                NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Found Steam Version: " + val, NbCore.LogVerbosityLevel.INFO);
                 return val;
             }
             else
-                NbCore.Common.Callbacks.Log("Unable to find Steam Version: ", NbCore.Common.LogVerbosityLevel.INFO);
+                NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Unable to find Steam Version: ", NbCore.LogVerbosityLevel.INFO);
 
             //Check GOG32
 
@@ -298,21 +298,21 @@ namespace NibbleNMSPlugin
 
             if (val != null)
             {
-                NbCore.Common.Callbacks.Log("Found GOG32 Version: " + val, NbCore.Common.LogVerbosityLevel.INFO);
+                NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Found GOG32 Version: " + val, NbCore.LogVerbosityLevel.INFO);
                 return val;
             }
             else
-                NbCore.Common.Callbacks.Log("Unable to find GOG32 Version: " + val, NbCore.Common.LogVerbosityLevel.INFO);
+                NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Unable to find GOG32 Version: " + val, NbCore.LogVerbosityLevel.INFO);
 
             //Check GOG64
             val = Registry.GetValue(gog64_keyname, gog64_keyval, "") as string;
             if (val != null)
             {
-                NbCore.Common.Callbacks.Log("Found GOG64 Version: " + val, NbCore.Common.LogVerbosityLevel.INFO);
+                NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Found GOG64 Version: " + val, NbCore.LogVerbosityLevel.INFO);
                 return val;
             }
             else
-                NbCore.Common.Callbacks.Log("Unable to find GOG64 Version: " + val, NbCore.Common.LogVerbosityLevel.INFO);
+                NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Unable to find GOG64 Version: " + val, NbCore.LogVerbosityLevel.INFO);
 
             return "";
         }
@@ -333,12 +333,12 @@ namespace NibbleNMSPlugin
 
             if (steam_path is null)
             {
-                NbCore.Common.Callbacks.Log("Failed to find Steam Installation: ", NbCore.Common.LogVerbosityLevel.INFO);
+                NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Failed to find Steam Installation: ", NbCore.LogVerbosityLevel.INFO);
                 return null;
             }
 
-            NbCore.Common.Callbacks.Log("Found Steam Installation: " + steam_path, NbCore.Common.LogVerbosityLevel.INFO);
-            NbCore.Common.Callbacks.Log("Searching for NMS in the default steam directory...", NbCore.Common.LogVerbosityLevel.INFO);
+            NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Found Steam Installation: " + steam_path, NbCore.LogVerbosityLevel.INFO);
+            NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Searching for NMS in the default steam directory...", NbCore.LogVerbosityLevel.INFO);
 
             //At first try to find acf entries in steam installation dir
             foreach (string path in Directory.GetFiles(Path.Combine(steam_path, "steamapps")))
@@ -350,7 +350,7 @@ namespace NibbleNMSPlugin
                     return Path.Combine(steam_path, @"steamapps\common\No Man's Sky\GAMEDATA");
             }
 
-            NbCore.Common.Callbacks.Log("NMS not found in default folders. Searching Steam Libraries...", NbCore.Common.LogVerbosityLevel.INFO);
+            NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "NMS not found in default folders. Searching Steam Libraries...", NbCore.LogVerbosityLevel.INFO);
 
             //If that did't work try to load the libraryfolders.vdf
             dynamic libraryfolders = VdfConvert.Deserialize(File.ReadAllText(Path.Combine(steam_path, @"steamapps\libraryfolders.vdf")));
@@ -372,7 +372,7 @@ namespace NibbleNMSPlugin
                 }
             }
             
-            NbCore.Common.Callbacks.Log("Unable to locate Steam Installation...", NbCore.Common.LogVerbosityLevel.INFO);
+            NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Unable to locate Steam Installation...", NbCore.LogVerbosityLevel.INFO);
             return null;
         }
 

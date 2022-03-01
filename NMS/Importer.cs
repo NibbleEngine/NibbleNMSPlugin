@@ -322,7 +322,8 @@ namespace NibbleNMSPlugin
                     sam.State.ShaderBinding = "mpCustomPerMaterial." + ms.Name.Value;
                     break;
                 default:
-                    Callbacks.Log("Not sure how to handle Sampler " + ms.Name.Value, LogVerbosityLevel.WARNING);
+                    PluginState.PluginRef.Log("Not sure how to handle Sampler " + ms.Name.Value, 
+                        LogVerbosityLevel.WARNING);
                     return null;
             }
             
@@ -1050,7 +1051,7 @@ namespace NibbleNMSPlugin
                     Hash = ulong.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "HASH"))
                 };
 
-                //Common.Callbacks.Log(string.Format("Randomized Object Color {0}, {1}, {2}", so.color[0], so.color[1], so.color[2]), Common.LogVerbosityLevel.INFO);
+                //Common.Callbacks.Logger.Log(string.Format("Randomized Object Color {0}, {1}, {2}", so.color[0], so.color[1], so.color[2]), Common.LogVerbosityLevel.INFO);
                 PluginState.PluginRef.Log(string.Format("Batch Physics Start {0} Count {1} Vertex Physics {2} - {3} Vertex Graphics {4} - {5} SkinMats {6}-{7}",
                     mmd.BatchStartPhysics, mmd.BatchCount, mmd.VertrStartPhysics, mmd.VertrEndPhysics, mmd.VertrStartGraphics, mmd.VertrEndGraphics,
                     mmd.FirstSkinMat, mmd.LastSkinMat), LogVerbosityLevel.INFO);
@@ -1353,10 +1354,12 @@ namespace NibbleNMSPlugin
             }
             else if (typeEnum == SceneNodeType.EMITTER)
             {
-                Callbacks.Log("Emmiters not supported atm", LogVerbosityLevel.WARNING);
+                PluginState.PluginRef.Log("Emmiters not supported atm", 
+                    LogVerbosityLevel.WARNING);
             } else
             {
-                Callbacks.Log("Unknown scenenode type. Please contant the developer", LogVerbosityLevel.WARNING);
+                PluginState.PluginRef.Log("Unknown scenenode type. Please contant the developer", 
+                    LogVerbosityLevel.WARNING);
             }
 
             //Set Parent after the transform component has been initialized

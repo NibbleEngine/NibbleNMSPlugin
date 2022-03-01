@@ -72,7 +72,7 @@ namespace NibbleNMSPlugin
 
             if (!fbo_status)
             {
-                Callbacks.Log("Unable to mix textures, probably 0x0 textures...\n", LogVerbosityLevel.ERROR);
+                PluginState.PluginRef.Log("Unable to mix textures, probably 0x0 textures...\n", LogVerbosityLevel.ERROR);
                 return;
             }
 
@@ -107,7 +107,7 @@ namespace NibbleNMSPlugin
             //At this point, at least one sampler exists, so for now I assume that the first sampler
             //is always the diffuse sampler and I can initiate the mixing process
             Console.WriteLine("Procedural Texture Detected: " + path);
-            Callbacks.Log(string.Format("Parsing Procedural Texture"), LogVerbosityLevel.INFO);
+            PluginState.PluginRef.Log(string.Format("Parsing Procedural Texture"), LogVerbosityLevel.INFO);
 
             TkProceduralTextureList template = FileUtils.LoadNMSTemplate(path) as TkProceduralTextureList;
 
@@ -115,18 +115,18 @@ namespace NibbleNMSPlugin
             for (int i = 0; i < 8; i++) texList.Add(null);
             ModelProcGen.parse_procTexture(ref texList, template);
 
-            Callbacks.Log("Proc Texture Selection", LogVerbosityLevel.INFO);
+            PluginState.PluginRef.Log("Proc Texture Selection", LogVerbosityLevel.INFO);
             for (int i = 0; i < 8; i++)
             {
                 if (texList[i] != null)
                 {
-                    Callbacks.Log(texList[i].Diffuse, LogVerbosityLevel.INFO);
-                    Callbacks.Log(texList[i].Mask, LogVerbosityLevel.INFO);
-                    Callbacks.Log(texList[i].Normal, LogVerbosityLevel.INFO);
+                    PluginState.PluginRef.Log(texList[i].Diffuse, LogVerbosityLevel.INFO);
+                    PluginState.PluginRef.Log(texList[i].Mask, LogVerbosityLevel.INFO);
+                    PluginState.PluginRef.Log(texList[i].Normal, LogVerbosityLevel.INFO);
                 }
             }
 
-            Callbacks.Log("Procedural Material. Trying to generate procTextures...", LogVerbosityLevel.INFO);
+            PluginState.PluginRef.Log("Procedural Material. Trying to generate procTextures...", LogVerbosityLevel.INFO);
 
             for (int i = 0; i < 8; i++)
             {
@@ -191,7 +191,7 @@ namespace NibbleNMSPlugin
                     {
                         //Texture Not Found Continue
                         Console.WriteLine("Diffuse Texture " + partNameDiff + " Not Found, Appending White Tex");
-                        Callbacks.Log(string.Format("Diffuse Texture {0} Not Found", partNameDiff), LogVerbosityLevel.WARNING);
+                        PluginState.PluginRef.Log(string.Format("Diffuse Texture {0} Not Found", partNameDiff), LogVerbosityLevel.WARNING);
                         baseLayersUsed[i] = 0.0f;
                     }
                 }
@@ -225,8 +225,7 @@ namespace NibbleNMSPlugin
                     catch (System.IO.FileNotFoundException)
                     {
                         //Mask Texture not found
-                        Console.WriteLine("Mask Texture " + partNameMask + " Not Found");
-                        Callbacks.Log(string.Format("Mask Texture {0} Not Found", partNameMask), LogVerbosityLevel.WARNING);
+                        PluginState.PluginRef.Log(string.Format("Mask Texture {0} Not Found", partNameMask), LogVerbosityLevel.WARNING);
                         alphaLayersUsed[i] = 0.0f;
                     }
                 }
@@ -259,7 +258,7 @@ namespace NibbleNMSPlugin
                     catch (System.IO.FileNotFoundException)
                     {
                         //Normal Texture not found
-                        Callbacks.Log(string.Format("Normal Texture {0} Not Found", partNameNormal), LogVerbosityLevel.WARNING);
+                        PluginState.PluginRef.Log(string.Format("Normal Texture {0} Not Found", partNameNormal), LogVerbosityLevel.WARNING);
                     }
                 }
                 else
