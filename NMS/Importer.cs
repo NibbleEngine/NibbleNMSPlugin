@@ -742,22 +742,19 @@ namespace NibbleNMSPlugin
             fs.Seek(meshMetaData_offset, SeekOrigin.Begin);
             for (int i = 0; i < meshMetaData_counter; i++)
             {
-                geomMeshMetaData mmd = new()
-                {
-                    name = StringUtils.read_string(br, 0x80),
-                    hash = br.ReadUInt64(),
-                    vs_size = br.ReadUInt32(),
-                    vs_abs_offset = br.ReadUInt32(),
-                    is_size = br.ReadUInt32(),
-                    is_abs_offset = br.ReadUInt32(),
-                    double_buffering = br.ReadBoolean()
-                };
-                //Align offset to 0x10
-                br.BaseStream.Seek(16 - br.BaseStream.Position % 16, SeekOrigin.Current);
+                geomMeshMetaData mmd = new geomMeshMetaData();
+                mmd.name = StringUtils.read_string(br, 0x80);
+                mmd.hash = br.ReadUInt64();
+                mmd.vs_size = br.ReadUInt32();
+                mmd.vs_abs_offset = br.ReadUInt32();
+                mmd.is_size = br.ReadUInt32();
+                mmd.is_abs_offset = br.ReadUInt32();
+                mmd.double_buffering = br.ReadBoolean();
+                br.BaseStream.Seek(7, SeekOrigin.Current);
                 geom.meshMetaDataDict[mmd.hash] = mmd;
                 PluginState.PluginRef.Log(mmd.name, LogVerbosityLevel.INFO);
             }
-        
+
             //Get main mesh description
             fs.Seek(mesh_descr_offset, SeekOrigin.Begin);
             var mesh_desc = "";
