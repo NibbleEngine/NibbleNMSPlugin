@@ -291,6 +291,10 @@ namespace NibbleNMSPlugin
             //Load template
             //Try to use libMBIN to load the Material files
             TkMaterialData template = FileUtils.LoadNMSTemplate(path) as TkMaterialData;
+
+            if (template == null)
+                return EngineRef.GetMaterialByName("defaultMat");
+
 #if DEBUG
             //Save NMSTemplate to exml
             template.WriteToExml("Temp\\" + template.Name + ".exml");
@@ -844,32 +848,29 @@ namespace NibbleNMSPlugin
             return geom;
 
         }
-        
-        public static SceneGraphNode ImportScene(string path)
+
+        public static bool NMSSceneNodeHasAttrib(TkSceneNodeData template, string attrib)
         {
-            TkSceneNodeData template = (TkSceneNodeData)FileUtils.LoadNMSTemplate(path);
 
-            PluginState.PluginRef.Log("Loading Objects from MBINFile", LogVerbosityLevel.INFO);
+            foreach (TkSceneNodeAttributeData attrib_data in template.Attributes)
+            {
+                if (attrib_data.Name.Value == attrib)
+                    return true;
+            }
 
-            string sceneName = template.Name;
-            PluginState.PluginRef.Log(string.Format("Trying to load Scene {0}", sceneName), LogVerbosityLevel.INFO);
-            string[] split = sceneName.Split('\\');
-            string scnName = split[^1];
-            Callbacks.updateStatus("Importing Scene: " + scnName);
-            PluginState.PluginRef.Log(string.Format("Importing Scene: {0}", scnName), LogVerbosityLevel.INFO);
+            return false;
+        }
 
-            //Get Geometry File
-            //Parse geometry once
-            string geomfile = FileUtils.parseNMSTemplateAttrib(template.Attributes, "GEOMETRY");
-            int num_lods = int.Parse(FileUtils.parseNMSTemplateAttrib(template.Attributes, "NUMLODS"));
-
-            GeomObject gobject;
+        public static GeomObject ImportGeometry(string geomfile)
+        {
+            GeomObject gobject = null;
             if (RenderState.engineRef.renderSys.GeometryMgr.HasGeom(geomfile))
             {
                 //Load from dict
                 gobject = RenderState.engineRef.renderSys.GeometryMgr.GetGeom(geomfile);
 
-            } else
+            }
+            else
             {
 
 #if DEBUG
@@ -887,7 +888,7 @@ namespace NibbleNMSPlugin
 
                 //Try to fetch the geometry.data.mbin file in order to fetch the geometry streams
                 string gstreamfile = "";
-                split = geomfile.Split('.');
+                string[] split = geomfile.Split('.');
                 for (int i = 0; i < split.Length - 1; i++)
                     gstreamfile += split[i] + ".";
                 gstreamfile += "DATA.MBIN.PC";
@@ -920,36 +921,66 @@ namespace NibbleNMSPlugin
                 gfs.Close();
             }
 
+            return gobject;
+        }
+
+        public static SceneGraphNode ImportScene(string path)
+        {
+            TkSceneNodeData template = (TkSceneNodeData)FileUtils.LoadNMSTemplate(path);
+
+            PluginState.PluginRef.Log("Loading Objects from MBINFile", LogVerbosityLevel.INFO);
+
+            string sceneName = template.Name;
+            PluginState.PluginRef.Log(string.Format("Trying to load Scene {0}", sceneName), LogVerbosityLevel.INFO);
+            string[] split = sceneName.Split('\\');
+            string scnName = split[^1];
+            Callbacks.updateStatus("Importing Scene: " + scnName);
+            PluginState.PluginRef.Log(string.Format("Importing Scene: {0}", scnName), LogVerbosityLevel.INFO);
+
+            //Get Geometry File
+            //Parse geometry once
+            string geomfile = "";
+            GeomObject gobject = null;
+            if (NMSSceneNodeHasAttrib(template, "GEOMETRY"))
+            {
+                geomfile = FileUtils.parseNMSTemplateAttrib(template.Attributes, "GEOMETRY");
+                gobject = ImportGeometry(geomfile);
+                int num_lods = int.Parse(FileUtils.parseNMSTemplateAttrib(template.Attributes, "NUMLODS"));
+
+                //Initialize SceneMeshGroup
+                SceneMeshGroup = new()
+                {
+                    ID = ImportedSceneCounter,
+                    Meshes = new()
+                };
+
+                //Store skinMatrices from the geometry object to the scenegroup
+                SceneMeshGroup.boneRemapIndices = new int[gobject.boneRemap.Length];
+                for (int i = 0; i < gobject.boneRemap.Length; i++)
+                    SceneMeshGroup.boneRemapIndices[i] = gobject.boneRemap[i];
+
+                for (int i = 0; i < gobject.jointData.Count; i++)
+                {
+                    SceneMeshGroup.JointBindingDataList[i].invBindMatrix = gobject.jointData[i].invBindMatrix;
+                    SceneMeshGroup.JointBindingDataList[i].BindMatrix = gobject.jointData[i].BindMatrix;
+                }
+
+            }
+                
             //Random Generetor for colors
             Random randgen = new();
 
             //Clear joint and animation dictionary
             localAnimationDataDictionary.Clear();
 
-            //Initialize SceneMeshGroup
-            SceneMeshGroup = new()
-            {
-                ID = ImportedSceneCounter,
-                Meshes = new()
-            };
-
-            //Store skinMatrices from the geometry object to the scenegroup
-            SceneMeshGroup.boneRemapIndices = new int[gobject.boneRemap.Length];
-            for (int i = 0; i < gobject.boneRemap.Length; i++)
-                SceneMeshGroup.boneRemapIndices[i] = gobject.boneRemap[i];
-
-            for (int i = 0; i < gobject.jointData.Count; i++)
-            {
-                SceneMeshGroup.JointBindingDataList[i].invBindMatrix = gobject.jointData[i].invBindMatrix;
-                SceneMeshGroup.JointBindingDataList[i].BindMatrix = gobject.jointData[i].BindMatrix;
-            }
+            
 
             //Store JointBindingData from the geometry object to the scenegroup
             ImportedSceneCounter++;
 
             //Parse root scene
             SceneGraphNode root = CreateNodeFromTemplate(template, gobject, null, null);
-            gobject.Dispose();
+            gobject?.Dispose();
 
             return root;
         }
@@ -1099,10 +1130,10 @@ namespace NibbleNMSPlugin
                 so.AddComponent<MeshComponent>(mc);
 
                 //Create SceneComponent
-                SceneComponent sc = new()
-                {
-                    NumLods = int.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "NUMLODS"))
-                };
+                SceneComponent sc = new();
+
+                if (NMSSceneNodeHasAttrib(node, "NUMLODS"))
+                    sc.NumLods = int.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "NUMLODS"));
 
                 so.AddComponent<SceneComponent>(sc);
 

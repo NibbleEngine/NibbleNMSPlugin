@@ -64,6 +64,7 @@ namespace NibbleNMSPlugin
         public static string PluginCreator = "gregkwaste";
 
         private readonly ImGuiPakBrowser PakBrowser = new();
+        private readonly NbCore.UI.ImGui.OpenFileDialog openFileDialog;
         private bool show_open_file_dialog_pak = false;
         private bool open_file_enabled = false;
         private bool show_update_libmbin_dialog = false;
@@ -72,15 +73,23 @@ namespace NibbleNMSPlugin
 
         public NMSPlugin(Engine e) : base(e)
         {
-            base.Name = NMSPlugin.PluginName;
-            base.Version = NMSPlugin.PluginVersion;
-            base.Description = NMSPlugin.PluginDescription;
-            base.Creator = NMSPlugin.PluginCreator;
+            Name = PluginName;
+            Version = PluginVersion;
+            Description = PluginDescription;
+            Creator = PluginCreator;
+
+            //Initialize OpenFileDialog
+            openFileDialog = new("nms-open-file", ".mbin|.exml");
         }
         
         public void ShowOpenFileDialogPak()
         {
             show_open_file_dialog_pak = true;
+        }
+
+        public void ShowOpenFileDialog()
+        {
+            openFileDialog.Open();
         }
 
         public void ShowUpdateLibMBINDialog()
@@ -92,7 +101,7 @@ namespace NibbleNMSPlugin
         {
             if (show_open_file_dialog_pak)
             {
-                ImGui.OpenPopup("open-file-pak");
+                ImGui.OpenPopup("nms-open-file-pak");
                 show_open_file_dialog_pak = false;
             }
 
@@ -103,7 +112,7 @@ namespace NibbleNMSPlugin
             }
 
             bool isOpen = true;
-            if (ImGui.BeginPopupModal("open-file-pak", ref isOpen))
+            if (ImGui.BeginPopupModal("nms-open-file-pak", ref isOpen))
             {
                 if (PakBrowser.isFinished())
                 {
@@ -126,6 +135,12 @@ namespace NibbleNMSPlugin
                 }
 
                 ImGui.EndPopup();
+            }
+
+
+            if (openFileDialog.Draw(new System.Numerics.Vector2(600, 400)))
+            {
+                Import(openFileDialog.GetSelectedFile());
             }
 
             if (ImGui.BeginPopupModal("update-libmbin", ref isOpen, ImGuiWindowFlags.None))
@@ -283,6 +298,11 @@ namespace NibbleNMSPlugin
                 if (ImGui.MenuItem("Import from PAK", "", false, open_file_enabled))
                 {
                     ShowOpenFileDialogPak();
+                }
+
+                if (ImGui.MenuItem("Import from file", "", false, open_file_enabled))
+                {
+                    ShowOpenFileDialog();
                 }
 
                 if (ImGui.MenuItem("Update LibMBIN"))
