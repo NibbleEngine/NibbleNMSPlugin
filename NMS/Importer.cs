@@ -305,7 +305,7 @@ namespace NibbleNMSPlugin
             mat.ShaderConfig = EngineRef.GetShaderConfigByName("UberShader_Deferred");
             
             //TODO: Maybe I can check if the shader is compiled during registration
-            NbShader shader = EngineRef.CompileMaterialShader(mat);
+            NbShader shader = EngineRef.CompileShader(mat);
             EngineRef.AttachShaderToMaterial(mat, shader);
             return mat;
         }
