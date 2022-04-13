@@ -239,18 +239,18 @@ namespace NibbleNMSPlugin
             //Texture Mixing Shader
             GLSLShaderConfig conf = EngineRef.CreateShaderConfig(vs, fs,
                                       null, null, null,
-                                      new() { }, NbShaderMode.DEFFERED, "TextureMix");
+                                      NbShaderMode.DEFFERED, "TextureMix");
             EngineRef.RegisterEntity(conf);
 
 
             //Compile Shader
             NbShader shader = new()
             {
+                RefShaderConfig = conf,
                 Type = NbShaderType.TEXTURE_MIX_SHADER
             };
-            NbCore.Platform.Graphics.GraphicsAPI.CompileShader(ref shader, conf);
-            EngineRef.RegisterEntity(shader);
 
+            EngineRef.CompileShader(shader);
         }
 
         private void AddDefaultTextures()
