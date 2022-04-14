@@ -142,7 +142,7 @@ namespace NibbleNMSPlugin
 
             NbTexture tex;
             //Try to load the texture
-            if (texMgr.HasTexture(sampler.Map))
+            if (texMgr.Contains(sampler.Map))
             {
                 tex = texMgr.Get(sampler.Map);
             }

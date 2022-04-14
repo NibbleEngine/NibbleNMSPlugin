@@ -96,9 +96,9 @@ namespace NibbleNMSPlugin
             fbo_tex.Dispose();
             
             //Add the new procedural textures to the textureManager
-            texMgr.AddTexture(diffTex);
-            texMgr.AddTexture(maskTex);
-            texMgr.AddTexture(normalTex);
+            texMgr.Add(diffTex.Path, diffTex);
+            texMgr.Add(maskTex.Path, maskTex);
+            texMgr.Add(normalTex.Path, normalTex);
         }
 
         //Generate procedural textures
@@ -170,7 +170,7 @@ namespace NibbleNMSPlugin
                     //Add White
                     baseLayersUsed[i] = 0.0f;
                 }
-                else if (!texMgr.HasTexture(partNameDiff))
+                else if (!texMgr.Contains(partNameDiff))
                 {
                     //Configure the Diffuse Texture
                     try
@@ -180,7 +180,7 @@ namespace NibbleNMSPlugin
                         tex.palOpt = palOpt;
                         tex.procColor = palColor;
                         //Store to master texture manager
-                        texMgr.AddTexture(tex);
+                        texMgr.Add(tex.Path, tex);
 
                         //Save Texture to material
                         difftextures[i] = tex;
@@ -210,7 +210,7 @@ namespace NibbleNMSPlugin
                     //Skip
                     alphaLayersUsed[i] = 0.0f;
                 }
-                else if (!texMgr.HasTexture(partNameMask))
+                else if (!texMgr.Contains(partNameMask))
                 {
                     //Configure Mask
                     try
@@ -245,7 +245,7 @@ namespace NibbleNMSPlugin
                     //Skip
 
                 }
-                else if (!texMgr.HasTexture(partNameNormal))
+                else if (!texMgr.Contains(partNameNormal))
                 {
                     try
                     {
@@ -386,7 +386,7 @@ namespace NibbleNMSPlugin
             //Use the RenderQuad Method to do the job
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             NbCore.Systems.RenderingSystem renderSystem = engine.renderSys;
-            renderSystem.Renderer.RenderQuad(renderSystem.GeometryMgr.GetPrimitiveMesh((ulong) "default_renderquad".GetHashCode()),
+            renderSystem.Renderer.RenderQuad(engine.GetMesh((ulong) "default_renderquad".GetHashCode()),
                 shader, shader.CurrentState);
 
 
@@ -487,7 +487,7 @@ namespace NibbleNMSPlugin
 
             NbCore.Systems.RenderingSystem renderSystem = engine.renderSys;
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            renderSystem.Renderer.RenderQuad(renderSystem.GeometryMgr.GetPrimitiveMesh((ulong)"default_renderquad".GetHashCode()),
+            renderSystem.Renderer.RenderQuad(engine.GetMesh((ulong)"default_renderquad".GetHashCode()),
                 shader, shader.CurrentState);
 
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());
@@ -584,7 +584,7 @@ namespace NibbleNMSPlugin
 
             NbCore.Systems.RenderingSystem renderSystem = engine.renderSys;
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            renderSystem.Renderer.RenderQuad(renderSystem.GeometryMgr.GetPrimitiveMesh((ulong)"default_renderquad".GetHashCode()),
+            renderSystem.Renderer.RenderQuad(engine.GetMesh((ulong)"default_renderquad".GetHashCode()),
                 shader, shader.CurrentState);
 
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());

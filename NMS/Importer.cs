@@ -48,7 +48,7 @@ namespace NibbleNMSPlugin
             ImportedSceneCounter = 0;
 
             //Manual Dispose of non used textures
-            foreach (NbTexture tex in localTexMgr.TextureMap.Values)
+            foreach (NbTexture tex in localTexMgr.Objects)
             {
                 if (tex.Refs == 0)
                     tex.Dispose();
@@ -342,7 +342,7 @@ namespace NibbleNMSPlugin
             //Save texture to material
             string[] split = ms.Map.Value.Split('.');
             
-            if (!texMgr.HasTexture(sam.Map))
+            if (!texMgr.Contains(sam.Map))
             {
                 string temp = "";
                 if (sam.Name == "gDiffuseMap")
@@ -1031,15 +1031,19 @@ namespace NibbleNMSPlugin
 
 
             //Add Transform Component
-            TransformData td = new(node.Transform.TransX,
-                                   node.Transform.TransY,
-                                   node.Transform.TransZ,
-                                   MathUtils.degrees(rotations.X),
-                                   MathUtils.degrees(rotations.Y),
-                                   MathUtils.degrees(rotations.Z),
-                                   node.Transform.ScaleX,
-                                   node.Transform.ScaleY,
-                                   node.Transform.ScaleY);
+            TransformData td = new()
+            {
+                TransX = node.Transform.TransX,
+                TransY = node.Transform.TransY,
+                TransZ = node.Transform.TransZ,
+                RotX = MathUtils.degrees(rotations.X),
+                RotY = MathUtils.degrees(rotations.Y),
+                RotZ = MathUtils.degrees(rotations.Z),
+                ScaleX = node.Transform.ScaleX,
+                ScaleY = node.Transform.ScaleY,
+                ScaleZ = node.Transform.ScaleZ
+            };
+            
             TransformComponent tc = new(td);
             so.AddComponent<TransformComponent>(tc);
 
@@ -1132,7 +1136,7 @@ namespace NibbleNMSPlugin
                 //Create MeshComponent
                 MeshComponent mc = new()
                 {
-                    Mesh = RenderState.engineRef.GetPrimitiveMesh((ulong)"default_cross".GetHashCode())
+                    Mesh = RenderState.engineRef.GetMesh((ulong)"default_cross".GetHashCode())
                 };
 
                 so.AddComponent<MeshComponent>(mc);
@@ -1159,7 +1163,7 @@ namespace NibbleNMSPlugin
                 //Create MeshComponent
                 MeshComponent mc = new()
                 {
-                    Mesh = EngineRef.GetPrimitiveMesh((ulong)"default_cross".GetHashCode())
+                    Mesh = EngineRef.GetMesh((ulong)"default_cross".GetHashCode())
                 };
 
                 so.AddComponent<MeshComponent>(mc);
@@ -1269,7 +1273,7 @@ namespace NibbleNMSPlugin
                     NbCore.Primitives.Capsule q = new(new(0.0f), height, radius);
 
 
-                    NbMeshData md = q.geom.GetData();
+                    NbMeshData md = q.geom.GetMeshData();
                     NbMeshMetaData mmd = q.geom.GetMetaData();
 
                     q.Dispose();
@@ -1291,7 +1295,7 @@ namespace NibbleNMSPlugin
                     //Default quad
                     NbCore.Primitives.Sphere q = new(new(0.0f), radius);
                         
-                    NbMeshData md = q.geom.GetData();
+                    NbMeshData md = q.geom.GetMeshData();
                     NbMeshMetaData mmd = q.geom.GetMetaData();
 
                     q.Dispose();
@@ -1315,7 +1319,7 @@ namespace NibbleNMSPlugin
                     //Default quad
                     NbCore.Primitives.Box q = new(width, height, depth, new NbVector3(1.0f,0.0f,0.0f), true);
 
-                    NbMeshData md = q.geom.GetData();
+                    NbMeshData md = q.geom.GetMeshData();
                     NbMeshMetaData mmd = q.geom.GetMetaData();
 
                     q.Dispose();
@@ -1362,7 +1366,7 @@ namespace NibbleNMSPlugin
                     {
                         Type = NbMeshType.Light,
                         MetaData = ls.geom.GetMetaData(),
-                        Data = ls.geom.GetData(),
+                        Data = ls.geom.GetMeshData(),
                         Hash = (ulong) (so.Name.GetHashCode() ^ DateTime.Now.GetHashCode()),
                         Material = EngineRef.GetMaterialByName("lightMat")
                     }
@@ -1374,7 +1378,7 @@ namespace NibbleNMSPlugin
                 //Add Light Component
                 LightComponent lc = new()
                 {
-                    Mesh = EngineRef.renderSys.GeometryMgr.GetPrimitiveMesh((ulong)"default_light_sphere".GetHashCode()),
+                    Mesh = EngineRef.GetMesh((ulong)"default_light_sphere".GetHashCode()),
                     Data = new()
                     {
                         Intensity = intensity,
