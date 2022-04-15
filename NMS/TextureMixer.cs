@@ -147,7 +147,11 @@ namespace NibbleNMSPlugin
                 TkPaletteTexture paletteNode = ptex.Palette;
                 string paletteName = paletteNode.Palette.ToString();
                 string colorName = paletteNode.ColourAlt.ToString();
-                NbVector4 palColor = palette[paletteName][colorName];
+                NbVector4 palColor;
+                if (palette.ContainsKey(paletteName))
+                    palColor = palette[paletteName][colorName];
+                else
+                    palColor = new NbVector4(0.8f, 0.3f, 0.7f, 1.0f);
                 //Randomize palette Color every single time
                 //Vector3 palColor = Model_Viewer.Palettes.get_color(paletteName, colorName);
 
