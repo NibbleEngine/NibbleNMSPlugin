@@ -304,7 +304,7 @@ namespace NibbleNMSPlugin
             MeshMaterial mat = CreateMaterialFromStruct(template, input_texMgr);
             GLSLShaderConfig conf = EngineRef.GetShaderConfigByName("UberShader_Deferred");
 
-            int shader_hash = EngineRef.CalculateShaderHash(conf, EngineRef.GetMaterialShaderDirectives(mat));
+            ulong shader_hash = EngineRef.CalculateShaderHash(conf, EngineRef.GetMaterialShaderDirectives(mat));
             
             NbShader shader = EngineRef.GetShaderByHash(shader_hash);
 
@@ -1047,6 +1047,17 @@ namespace NibbleNMSPlugin
             TransformComponent tc = new(td);
             so.AddComponent<TransformComponent>(tc);
 
+            //For now fetch only one attachment
+            string attachment = FileUtils.parseNMSTemplateAttrib(node.Attributes, "ATTACHMENT");
+            TkAttachmentData attachment_data = null;
+            if (attachment != "")
+            {
+                attachment_data = FileUtils.LoadNMSTemplate(attachment) as TkAttachmentData;
+            }
+
+            //Process Attachments
+            ProcessComponents(so, attachment_data);
+
             if (typeEnum == SceneNodeType.MESH)
             {
                 PluginState.PluginRef.Log(string.Format("Parsing Mesh {0}", node.Name.Value),
@@ -1088,8 +1099,10 @@ namespace NibbleNMSPlugin
                     AABBMAX = new NbVector3(MathUtils.FloatParse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "AABBMAXX")),
                                           MathUtils.FloatParse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "AABBMAXY")),
                                           MathUtils.FloatParse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "AABBMAXZ"))),
-                    Hash = ulong.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "HASH"))
+                    
                 };
+
+                ulong mmdHash = ulong.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "HASH"));
 
                 //Common.Callbacks.Logger.Log(string.Format("Randomized Object Color {0}, {1}, {2}", so.color[0], so.color[1], so.color[2]), Common.LogVerbosityLevel.INFO);
                 PluginState.PluginRef.Log(string.Format("Batch Physics Start {0} Count {1} Vertex Physics {2} - {3} Vertex Graphics {4} - {5} SkinMats {6}-{7}",
@@ -1105,8 +1118,8 @@ namespace NibbleNMSPlugin
                     mmd.BoneRemapIndices[i] = gobject.boneRemap[mmd.FirstSkinMat + i];
                 
                 //Load Mesh Data
-                NbMeshData md = gobject.GetMeshData(mmd.Hash); //TODO: Check that function
-
+                NbMeshData md = gobject.GetMeshData(mmdHash); //TODO: Check that function
+                
                 //Generate NbMesh
                 NbMesh nm = new();
                 //TODO differentiate mesh from mesh stream hashes, technically 
@@ -1175,10 +1188,8 @@ namespace NibbleNMSPlugin
                 {
                     JointIndex = int.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "JOINTINDEX"))
                 };
-
-                so.AddComponent<JointComponent>(jc);
-
                 
+                so.AddComponent<JointComponent>(jc);
             }
             else if (typeEnum == SceneNodeType.REFERENCE)
             {
@@ -1187,38 +1198,30 @@ namespace NibbleNMSPlugin
                 {
                     Reference = FileUtils.parseNMSTemplateAttrib(node.Attributes, "SCENEGRAPH").ToUpper()
                 };
-
+                
                 so.AddComponent<ReferenceComponent>(rc);
 
                 //Keep Old Import State so that we can bring it back
                 NbMeshGroup backup_SceneMeshGroup = SceneMeshGroup;
                 Dictionary<string, SceneGraphNode> backup_localJointDictionary = new();
-                Dictionary<string, MeshMaterial> backup_localMaterialDictionary = new();
-                foreach (var pair in localMaterialDictionary)
-                    backup_localMaterialDictionary[pair.Key] = pair.Value;
-
+                
                 //Clear State
                 //localTexMgr = new();
                 localAnimationDataDictionary.Clear();
-                localMaterialDictionary.Clear();
-
+                
                 //Import Scene
                 SceneGraphNode ref_node = ImportScene(rc.Reference);
 
                 //Restore State
                 SceneMeshGroup = backup_SceneMeshGroup;
                 //localTexMgr = backup_localTexMgr;
-                localMaterialDictionary.Clear();
-                foreach (var pair in backup_localMaterialDictionary)
-                    localMaterialDictionary[pair.Key] = pair.Value;
                 ref_node.SetParent(so);
-
             }
             else if (typeEnum == SceneNodeType.COLLISION)
             {
                 string collisionType = FileUtils.parseNMSTemplateAttrib(node.Attributes, "TYPE").ToUpper();
                 PluginState.PluginRef.Log($"Collision Detected {node.Name.Value} {collisionType}", LogVerbosityLevel.INFO);
-
+                
                 MeshMaterial collisionMat = EngineRef.GetMaterialByName("collisionMat");
 
                 //Create Collision Component
@@ -1414,17 +1417,6 @@ namespace NibbleNMSPlugin
                 SceneComponent sc = sceneRef.GetComponent<SceneComponent>() as SceneComponent;
                 sc.AddNode(so);
             }
-
-            //For now fetch only one attachment
-            string attachment = FileUtils.parseNMSTemplateAttrib(node.Attributes, "ATTACHMENT");
-            TkAttachmentData attachment_data = null;
-            if (attachment != "")
-            {
-                attachment_data = FileUtils.LoadNMSTemplate(attachment) as TkAttachmentData;
-            }
-
-            //Process Attachments
-            ProcessComponents(so, attachment_data);
 
             //PluginState.PluginRef.Log("Children Count {0}", childs.ChildNodes.Count);
             foreach (TkSceneNodeData child in node.Children)

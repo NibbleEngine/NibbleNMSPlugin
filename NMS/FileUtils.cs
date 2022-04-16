@@ -136,17 +136,29 @@ namespace NibbleNMSPlugin
             catch (Exception ex)
             {
                 if (ex is DirectoryNotFoundException || ex is FileNotFoundException)
-                    NbCore.Common.Callbacks.showError("File " + effective_filepath + " Not Found...", "Error");
+                {
+                    NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef,
+                                                       "File " + effective_filepath + " Not Found...",
+                                                       NbCore.LogVerbosityLevel.ERROR);
+                }
+                    
                 else if (ex is IOException)
-                    NbCore.Common.Callbacks.showError("File " + effective_filepath + " problem...", "Error");
+                {
+                    NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, 
+                                                       "File " + effective_filepath + " problem...",
+                                                       NbCore.LogVerbosityLevel.ERROR);
+                }
+                    
                 else if (ex is TargetInvocationException)
                 {
-                    NbCore.Common.Callbacks.showError("libMBIN failed to decompile file. If this is a vanilla file, contact the MbinCompiler developer",
-                    "Error");
+                    NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "libMBIN failed to decompile file. If this is a vanilla file, contact the MbinCompiler developer",
+                    NbCore.LogVerbosityLevel.ERROR);
                 }
                 else
                 {
-                    NbCore.Common.Callbacks.showError("Unhandled Exception " + ex.Message, "Error");
+                    NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef,
+                                                       "Unhandled Exception " + ex.Message,
+                                                       NbCore.LogVerbosityLevel.ERROR);
                 }
                 return null;
 
