@@ -246,10 +246,10 @@ namespace NibbleNMSPlugin
             //Compile Shader
             NbShader shader = new()
             {
-                RefShaderConfig = conf,
                 Type = NbShaderType.TEXTURE_MIX_SHADER
             };
 
+            shader.SetShaderConfig(conf);
             EngineRef.CompileShader(shader);
         }
 

@@ -37,7 +37,7 @@ namespace NibbleNMSPlugin
         private static NbMeshGroup SceneMeshGroup = null;
         //private static NbAnimationGroup ActiveAnimationGroup = null;
         private static TextureManager localTexMgr = new();
-        private static Dictionary<int, AnimationData> localAnimationDataDictionary = new();
+        private static Dictionary<ulong, AnimationData> localAnimationDataDictionary = new();
         private static Dictionary<string, MeshMaterial> localMaterialDictionary = new();
         private static Engine EngineRef;
 
@@ -119,8 +119,8 @@ namespace NibbleNMSPlugin
                     break;
             }
 
-            if (localAnimationDataDictionary.ContainsKey(admd.GetHashCode()))
-                return localAnimationDataDictionary[admd.GetHashCode()];
+            if (localAnimationDataDictionary.ContainsKey(admd.GetHash()))
+                return localAnimationDataDictionary[admd.GetHash()];
             
 
             AnimationData ad = new AnimationData()
@@ -152,7 +152,7 @@ namespace NibbleNMSPlugin
             }
 
             //Store to local dictionary
-            localAnimationDataDictionary[ad.MetaData.GetHashCode()] = ad;
+            localAnimationDataDictionary[ad.MetaData.GetHash()] = ad;
             
             return ad;
         }
@@ -1149,7 +1149,7 @@ namespace NibbleNMSPlugin
                 //Create MeshComponent
                 MeshComponent mc = new()
                 {
-                    Mesh = RenderState.engineRef.GetMesh((ulong)"default_cross".GetHashCode())
+                    Mesh = RenderState.engineRef.GetMesh(NbHasher.Hash("default_cross"))
                 };
 
                 so.AddComponent<MeshComponent>(mc);
@@ -1176,7 +1176,7 @@ namespace NibbleNMSPlugin
                 //Create MeshComponent
                 MeshComponent mc = new()
                 {
-                    Mesh = EngineRef.GetMesh((ulong)"default_cross".GetHashCode())
+                    Mesh = EngineRef.GetMesh(NbHasher.Hash("default_cross"))
                 };
 
                 so.AddComponent<MeshComponent>(mc);
@@ -1260,7 +1260,7 @@ namespace NibbleNMSPlugin
                     //Generate Mesh
                     mc.Mesh = new()
                     {
-                        Hash = (ulong)mmd.GetHashCode() ^ (ulong)"CollisionMesh".GetHashCode(),
+                        Hash = NbHasher.CombineHash(mmd.GetHash(), NbHasher.Hash("CollisionMesh")),
                         Type = NbMeshType.Collision,
                         Data = md,
                         MetaData = mmd,
@@ -1284,7 +1284,7 @@ namespace NibbleNMSPlugin
                     //Generate Mesh
                     mc.Mesh = new()
                     {
-                        Hash = (ulong) mmd.GetHashCode() ^ (ulong) "CollisionCapsule".GetHashCode(),
+                        Hash = NbHasher.CombineHash(mmd.GetHash(), NbHasher.Hash("CollisionCapsule")),
                         Type = NbMeshType.Collision,
                         Data = md,
                         MetaData = mmd,
@@ -1306,7 +1306,7 @@ namespace NibbleNMSPlugin
                     //Generate Mesh
                     mc.Mesh = new()
                     {
-                        Hash = (ulong)mmd.GetHashCode() ^ (ulong)"CollisionSphere".GetHashCode(),
+                        Hash = NbHasher.CombineHash(mmd.GetHash(), NbHasher.Hash("CollisionSphere")),
                         Type = NbMeshType.Collision,
                         Data = md,
                         MetaData = mmd,
@@ -1330,7 +1330,7 @@ namespace NibbleNMSPlugin
                     //Generate Mesh
                     mc.Mesh = new()
                     {
-                        Hash = (ulong)mmd.GetHashCode() ^ (ulong)"CollisionBox".GetHashCode(),
+                        Hash = NbHasher.CombineHash(mmd.GetHash(), NbHasher.Hash("CollisionBox")),
                         Type = NbMeshType.Collision,
                         Data = md,
                         MetaData = mmd,
@@ -1370,7 +1370,7 @@ namespace NibbleNMSPlugin
                         Type = NbMeshType.Light,
                         MetaData = ls.geom.GetMetaData(),
                         Data = ls.geom.GetMeshData(),
-                        Hash = (ulong) (so.Name.GetHashCode() ^ DateTime.Now.GetHashCode()),
+                        Hash = NbHasher.CombineHash(NbHasher.Hash(so.Name), (ulong) DateTime.Now.GetHashCode()),
                         Material = EngineRef.GetMaterialByName("lightMat")
                     }
                 };
@@ -1381,7 +1381,7 @@ namespace NibbleNMSPlugin
                 //Add Light Component
                 LightComponent lc = new()
                 {
-                    Mesh = EngineRef.GetMesh((ulong)"default_light_sphere".GetHashCode()),
+                    Mesh = EngineRef.GetMesh(NbHasher.Hash("default_light_sphere")),
                     Data = new()
                     {
                         Intensity = intensity,
