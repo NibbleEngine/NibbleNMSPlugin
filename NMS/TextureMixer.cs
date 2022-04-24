@@ -390,7 +390,7 @@ namespace NibbleNMSPlugin
             //Use the RenderQuad Method to do the job
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             NbCore.Systems.RenderingSystem renderSystem = engine.renderSys;
-            renderSystem.Renderer.RenderQuad(engine.GetMesh((ulong) "default_renderquad".GetHashCode()),
+            renderSystem.Renderer.RenderQuad(engine.GetMesh(NbHasher.Hash("default_renderquad")),
                 shader, shader.CurrentState);
 
 
@@ -491,7 +491,7 @@ namespace NibbleNMSPlugin
 
             NbCore.Systems.RenderingSystem renderSystem = engine.renderSys;
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            renderSystem.Renderer.RenderQuad(engine.GetMesh((ulong)"default_renderquad".GetHashCode()),
+            renderSystem.Renderer.RenderQuad(engine.GetMesh(NbHasher.Hash("default_renderquad")),
                 shader, shader.CurrentState);
 
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());
@@ -588,7 +588,7 @@ namespace NibbleNMSPlugin
 
             NbCore.Systems.RenderingSystem renderSystem = engine.renderSys;
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            renderSystem.Renderer.RenderQuad(engine.GetMesh((ulong)"default_renderquad".GetHashCode()),
+            renderSystem.Renderer.RenderQuad(engine.GetMesh(NbHasher.Hash("default_renderquad")),
                 shader, shader.CurrentState);
 
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());

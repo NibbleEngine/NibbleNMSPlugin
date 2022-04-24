@@ -294,27 +294,10 @@ namespace NibbleNMSPlugin
 
             if (template == null)
                 return EngineRef.GetMaterialByName("defaultMat");
-
-#if DEBUG
-            //Save NMSTemplate to exml
-            template.WriteToExml("Temp\\" + template.Name + ".exml");
-#endif
-
+            
             //Make new material based on the template
             MeshMaterial mat = CreateMaterialFromStruct(template, input_texMgr);
-            GLSLShaderConfig conf = EngineRef.GetShaderConfigByName("UberShader_Deferred");
-
-            ulong shader_hash = EngineRef.CalculateShaderHash(conf, EngineRef.GetMaterialShaderDirectives(mat));
             
-            NbShader shader = EngineRef.GetShaderByHash(shader_hash);
-
-            if (shader == null)
-            {
-                shader = EngineRef.CreateShader(conf, EngineRef.GetMaterialShaderDirectives(mat));
-                EngineRef.CompileShader(shader);
-            } 
-            
-            mat.AttachShader(shader);
             return mat;
         }
 
@@ -396,11 +379,9 @@ namespace NibbleNMSPlugin
             for (int i = 0; i < md.Flags.Count; i++)
                 mat.add_flag((MaterialFlagEnum) md.Flags[i].MaterialFlag);
 
-            
             //Get Samplers
             for (int i = 0; i < md.Samplers.Count; i++)
             {
-                TkMaterialSampler ms = md.Samplers[i];
                 NbSampler s = CreateSamplerFromStruct(md.Samplers[i], texMgr);
                 if (s != null)
                 {
@@ -408,6 +389,7 @@ namespace NibbleNMSPlugin
                 }
             }
             
+
             //Get Uniforms
             for (int i = 0; i < md.Uniforms.Count; i++)
             {
@@ -1009,6 +991,8 @@ namespace NibbleNMSPlugin
                 NameHash = node.NameHash
             };
 
+            so.Root = sceneRef;
+
             ////Angle Test
             //NbMatrix4 rotx = NbMatrix4.CreateRotationX(MathUtils.radians(node.Transform.RotX));
             //NbMatrix4 roty = NbMatrix4.CreateRotationY(MathUtils.radians(node.Transform.RotY));
@@ -1047,6 +1031,12 @@ namespace NibbleNMSPlugin
             TransformComponent tc = new(td);
             so.AddComponent<TransformComponent>(tc);
 
+
+            //Set Parent after the transform component has been initialized
+            if (parent != null)
+                so.SetParent(parent);
+
+
             //For now fetch only one attachment
             string attachment = FileUtils.parseNMSTemplateAttrib(node.Attributes, "ATTACHMENT");
             TkAttachmentData attachment_data = null;
@@ -1065,18 +1055,6 @@ namespace NibbleNMSPlugin
 
                 //Get Material Name
                 string matname = FileUtils.parseNMSTemplateAttrib(node.Attributes, "MATERIAL");
-
-                //Search for the material
-
-                //TODO: Restore material import
-                MeshMaterial mat;
-                if (localMaterialDictionary.ContainsKey(matname))
-                    mat = localMaterialDictionary[matname];
-                else
-                {
-                    mat = ImportMaterial(matname, localTexMgr);
-                    localMaterialDictionary.Add(matname, mat);
-                }
 
                 //Fill Mesh Meta Data
                 NbMeshMetaData mmd = new()
@@ -1116,7 +1094,48 @@ namespace NibbleNMSPlugin
                 mmd.BoneRemapIndices = new int[mmd.LastSkinMat - mmd.FirstSkinMat];
                 for (int i=0; i<mmd.BoneRemapIndices.Length; i++)
                     mmd.BoneRemapIndices[i] = gobject.boneRemap[mmd.FirstSkinMat + i];
-                
+
+                //Load Material
+                MeshMaterial mat;
+                if (localMaterialDictionary.ContainsKey(matname))
+                    mat = localMaterialDictionary[matname];
+                else
+                {
+                    mat = ImportMaterial(matname, localTexMgr);
+                    localMaterialDictionary.Add(matname, mat);
+                }
+
+                //Get correct shader config
+                GLSLShaderSource conf_vs = RenderState.engineRef.GetShaderSourceByFilePath("Shaders/Simple_VS.glsl");
+                GLSLShaderSource conf_fs = RenderState.engineRef.GetShaderSourceByFilePath("Shaders/Simple_FS.glsl");
+                NbShaderMode conf_mode = NbShaderMode.DEFFERED;
+
+                if (mat.has_flag(MaterialFlagEnum._F02_SKINNED) || (mmd.LastSkinMat - mmd.FirstSkinMat > 0))
+                    conf_mode |= NbShaderMode.SKINNED;
+
+                if (!mat.has_flag(MaterialFlagEnum._F07_UNLIT))
+                    conf_mode |= NbShaderMode.LIT;
+
+                ulong conf_hash = GLSLShaderConfig.GetHash(conf_vs, conf_fs, null, null, null, conf_mode);
+
+                GLSLShaderConfig conf = EngineRef.GetShaderConfigByHash(conf_hash);
+                if ( conf == null)
+                {
+                    conf = new GLSLShaderConfig(conf_vs, conf_fs, null, null, null, conf_mode);
+                }
+
+                //Set Material Shader
+                ulong shader_hash = EngineRef.CalculateShaderHash(conf, EngineRef.GetMaterialShaderDirectives(mat));
+                NbShader shader = EngineRef.GetShaderByHash(shader_hash);
+
+                if (shader == null)
+                {
+                    shader = EngineRef.CreateShader(conf, EngineRef.GetMaterialShaderDirectives(mat));
+                    EngineRef.CompileShader(shader);
+                }
+
+                mat.AttachShader(shader);
+
                 //Load Mesh Data
                 NbMeshData md = gobject.GetMeshData(mmdHash); //TODO: Check that function
                 
@@ -1291,6 +1310,29 @@ namespace NibbleNMSPlugin
                         Material = collisionMat
                     };
                 }
+                else if (collisionType == "CYLINDER")
+                {
+                    float radius = float.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "RADIUS"));
+                    float height = float.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "HEIGHT"));
+
+                    //Default cylinder
+                    NbCore.Primitives.Cylinder q = new(radius, height, new NbVector3(1.0f, 1.0f, 0.0f), true);
+
+                    NbMeshData md = q.geom.GetMeshData();
+                    NbMeshMetaData mmd = q.geom.GetMetaData();
+
+                    q.Dispose();
+
+                    //Generate Mesh
+                    mc.Mesh = new()
+                    {
+                        Hash = NbHasher.CombineHash(mmd.GetHash(), NbHasher.Hash("CollisionCylinder")),
+                        Type = NbMeshType.Collision,
+                        Data = md,
+                        MetaData = mmd,
+                        Material = collisionMat
+                    };
+                }
                 else if (collisionType == "SPHERE")
                 {
                     float radius = float.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "RADIUS"));
@@ -1404,12 +1446,6 @@ namespace NibbleNMSPlugin
                 PluginState.PluginRef.Log("Unknown scenenode type. Please contant the developer", 
                     LogVerbosityLevel.WARNING);
             }
-
-            //Set Parent after the transform component has been initialized
-            if (parent != null)
-                so.SetParent(parent);
-            
-            so.Root = sceneRef;
 
             //Once all components are in place, properly populate
             if (sceneRef != null)

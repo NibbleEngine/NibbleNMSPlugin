@@ -183,6 +183,11 @@ namespace NibbleNMSPlugin
             }
         }
 
+        public void ProcGen(object ob)
+        {
+
+        }
+
 
         public override void OnLoad()
         {
@@ -209,6 +214,15 @@ namespace NibbleNMSPlugin
             
             //Set State
             PluginState.PluginRef = this;
+
+
+            //Setup Plugin tools
+            ToolDescription proc_gen_tool = new()
+            {
+                Name = "ProcGen",
+                ToolFunc = ProcGen
+            };
+            Tools.Add(proc_gen_tool);
             
             //Create a separate thread to try and load PAK archives
             //Issue work request 

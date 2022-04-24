@@ -29,7 +29,8 @@ namespace NibbleNMSPlugin
             { "gDetailNormalMap", 5 }
         };
 
-
+        private static TkAnimNodeFrameData[] _frames = new TkAnimNodeFrameData[2]; //Used during parsing
+        
         //Animation frame data collection methods
         public static NbQuaternion fetchRotQuaternion(TkAnimNodeData node, TkAnimMetadata animMeta, 
             int frameCounter)
@@ -38,19 +39,19 @@ namespace NibbleNMSPlugin
             //Console.WriteLine("Setting Frame Index {0}", frameIndex);
             TkAnimNodeFrameData frame = animMeta.AnimFrameData[frameCounter];
             TkAnimNodeFrameData stillframe = animMeta.StillFrameData;
-            TkAnimNodeFrameData activeFrame = null;
-            int rotIndex = -1;
-            //Check if there is a rotation for that node
             
+            int rotIndex;
+            TkAnimNodeFrameData activeFrame;
+            //Load Rotations
             if (node.RotIndex < frame.Rotations.Count)
             {
-                activeFrame = frame;
                 rotIndex = node.RotIndex;
-}
+                activeFrame = frame;
+            }
             else //Load stillframedata
             {
-                activeFrame = stillframe;
                 rotIndex = node.RotIndex - frame.Rotations.Count;
+                activeFrame = stillframe;
             }
 
             NbQuaternion q = new();
@@ -70,6 +71,7 @@ namespace NibbleNMSPlugin
             TkAnimNodeFrameData frame = animMeta.AnimFrameData[frameCounter];
             TkAnimNodeFrameData stillframe = animMeta.StillFrameData;
             TkAnimNodeFrameData activeFrame;
+
             int transIndex = -1;
 
             //Load Translations
