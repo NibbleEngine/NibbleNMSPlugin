@@ -322,31 +322,43 @@ namespace NibbleNMSPlugin
             }
             
             //Save texture to material
-            string[] split = ms.Map.Value.Split('.');
             
-            if (!texMgr.Contains(ms.Map.Value))
+            string[] split = ms.Map.Value.Split('.');
+            string texMbin = split[0] + ".TEXTURE.MBIN";
+
+            //Detect Procedural Texture
+            if (FileUtils.NMSFileToArchiveMap.Keys.Contains(texMbin))
             {
-                string temp = "";
-                if (sam.Name == "gDiffuseMap")
+                string diff_tex = split[0] + ".DDS";
+
+                if (!texMgr.Contains(diff_tex))
                 {
-                    //Check if the sampler describes a proc gen texture
-                    temp = split[0];
-                    //Construct main filename
-
-                    string texMbin = temp + ".TEXTURE.MBIN";
-
-                    //Detect Procedural Texture
-                    if (FileUtils.NMSFileToArchiveMap.Keys.Contains(texMbin))
-                    {
-                        TextureMixer.combineTextures(ms.Map.Value, Palettes.paletteSel, ref texMgr);
-                        //Override Map
-                        sam.isProcGen = true;
-                    }
+                    //This process will generate three procgen textures diffuse/mask/normals
+                    TextureMixer.combineTextures(ms.Map.Value, Palettes.paletteSel, ref texMgr);
                 }
-            }
 
-            //Load the texture to the sampler
-            Util.loadSamplerTexture(ms.Map.Value, sam, texMgr);
+                //Try to load the generated textures
+                switch (sam.Name)
+                {
+                    case "gDiffuseMap":
+                        Util.loadSamplerTexture(split[0] + ".DDS", sam, texMgr);
+                        break;
+                    case "gNormalMap":
+                        Util.loadSamplerTexture(split[0] + ".NORMAL.DDS", sam, texMgr);
+                        break;
+                    case "gMasksMap":
+                        Util.loadSamplerTexture(split[0] + ".MASKS.DDS", sam, texMgr);
+                        break;
+                    default:
+                        Util.loadSamplerTexture(ms.Map.Value, sam, texMgr);
+                        break;
+                }
+                
+            } else
+            {
+                //Load the designated texture to the sampler
+                Util.loadSamplerTexture(ms.Map.Value, sam, texMgr);
+            }
             
             return sam;
         }

@@ -1,4 +1,4 @@
-#define DUMP_TEXTURES
+//#define DUMP_TEXTURES
 
 using System;
 using System.Collections.Generic;
@@ -79,8 +79,9 @@ namespace NibbleNMSPlugin
             NbTexture diffTex = mixDiffuseTextures(tex_width, tex_height);
             diffTex.Path = temp + "DDS";
 
+#if DUMP_TEXTURES
             FBO.dumpChannelToImage(fbo, ReadBufferMode.ColorAttachment0, "fbo_dump", tex_width, tex_height);
-
+#endif
             NbTexture maskTex = mixMaskTextures(tex_width, tex_height);
             maskTex.Path = temp + "MASKS.DDS";
 
@@ -348,7 +349,7 @@ namespace NibbleNMSPlugin
             shader.CurrentState.AddUniform("baseLayerIndex", (float)baseLayerIndex);
 
             //Activate Recoloring
-            shader.CurrentState.AddUniform("recolor_flag", 0.0f);
+            shader.CurrentState.AddUniform("recolor_flag", 1.0f);
 
             //No need for extra alpha tetuxres
             shader.CurrentState.AddUniform("use_alpha_textures", 0.0f);
@@ -362,14 +363,18 @@ namespace NibbleNMSPlugin
                     tex = dMask;
 
 
+
+                string uniform_str = "mainTex" + "[" + i + "]";
                 NbSamplerState s = new()
                 {
+                    SamplerID = i,
+                    ShaderLocation = shader.uniformLocations[uniform_str].loc,
+                    ShaderBinding = uniform_str,
                     Texture = tex
                 };
-
-                shader.CurrentState.AddSampler("mainTex" + "[" + i + "]", s);
+                
+                shader.CurrentState.AddSampler(uniform_str, s);
             }
-
 
             //Upload Recolouring Information
             for (int i = 0; i < 8; i++)
@@ -377,13 +382,6 @@ namespace NibbleNMSPlugin
                 NbVector4 vec = new(reColourings[i][0], reColourings[i][1],
                                     reColourings[i][2], reColourings[i][3]);
                 shader.CurrentState.AddUniform("lRecolours" + "[" + i + "]", vec);
-            }
-
-            //Upload Average Colors Information
-            NbVector4 avg_vec = new(0.5f);
-            for (int i = 0; i < 8; i++)
-            {
-                shader.CurrentState.AddUniform("lAverageColors" + "[" + i + "]", avg_vec);
             }
 
             //Use the RenderQuad Method to do the job
@@ -422,7 +420,6 @@ namespace NibbleNMSPlugin
             //BIND TEXTURES
             NbTexture tex;
 
-
             NbTexture dMask = RenderState.engineRef.GetTexture("default_mask.dds");
             NbTexture dDiff = RenderState.engineRef.GetTexture("default.dds");
 
@@ -435,12 +432,18 @@ namespace NibbleNMSPlugin
             int baseLayerIndex = 0;
             for (int i = 0; i < 8; i++)
             {
+                //Recalculate layerUsed Status
+                if (masktextures[i] != null)
+                    baseLayersUsed[i] = 1.0f;
+                else
+                    baseLayersUsed[i] = 0.0f;
+
                 shader.CurrentState.AddUniform("lbaseLayersUsed" + "[" + i + "]", baseLayersUsed[i]);
                 if (baseLayersUsed[i] > 0.0f)
                     baseLayerIndex = i;
             }
 
-            shader.CurrentState.AddUniform("baseLayerIndex", (float)baseLayerIndex);
+            shader.CurrentState.AddUniform("baseLayerIndex", (float) baseLayerIndex);
 
             //Activate Recoloring
             shader.CurrentState.AddUniform("recolor_flag", 0.0f);
@@ -448,8 +451,8 @@ namespace NibbleNMSPlugin
             //No need for extra alpha tetuxres
             shader.CurrentState.AddUniform("use_alpha_textures", 1.0f);
 
-
             //Upload DiffuseTextures as alphaTextures
+            int sampler_id = 0;
             for (int i = 0; i < 8; i++)
             {
                 if (difftextures[i] != null)
@@ -457,15 +460,19 @@ namespace NibbleNMSPlugin
                 else
                     tex = dMask;
 
+                string uniform_str = "alphaTex" + "[" + i + "]";
                 NbSamplerState s = new()
                 {
+                    SamplerID = sampler_id,
+                    ShaderLocation = shader.uniformLocations[uniform_str].loc,
+                    ShaderBinding = uniform_str,
                     Texture = tex
                 };
 
-                shader.CurrentState.AddSampler("alphaTex" + "[" + i + "]", s);
+                shader.CurrentState.AddSampler(uniform_str, s);
+                sampler_id += 1;
             }
             
-
             //Upload maskTextures
             for (int i = 0; i < 8; i++)
             {
@@ -474,18 +481,20 @@ namespace NibbleNMSPlugin
                 else
                     tex = dMask;
 
-
+                string uniform_str = "mainTex" + "[" + i + "]";
                 NbSamplerState s = new()
                 {
+                    SamplerID = sampler_id,
+                    ShaderLocation = shader.uniformLocations[uniform_str].loc,
+                    ShaderBinding = uniform_str,
                     Texture = tex
                 };
-
-                shader.CurrentState.AddSampler("mainTex" + "[" + i + "]", s);
+                sampler_id += 1;
+                shader.CurrentState.AddSampler(uniform_str, s);
             }
 
 
             //Use the RenderQuad Method to do the job
-
             NbCore.Systems.RenderingSystem renderSystem = engine.renderSys;
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             renderSystem.Renderer.RenderQuad(engine.GetMesh(NbHasher.Hash("default_renderquad")),
@@ -530,12 +539,18 @@ namespace NibbleNMSPlugin
             int baseLayerIndex = 0;
             for (int i = 0; i < 8; i++)
             {
+                //Recalculate layerUsed Status
+                if (normaltextures[i] != null)
+                    baseLayersUsed[i] = 1.0f;
+                else
+                    baseLayersUsed[i] = 0.0f;
+                
                 shader.CurrentState.AddUniform("lbaseLayersUsed" + "[" + i + "]", baseLayersUsed[i]);
                 if (baseLayersUsed[i] > 0.0f)
                     baseLayerIndex = i;
             }
 
-            shader.CurrentState.AddUniform("baseLayerIndex", (float)baseLayerIndex);
+            shader.CurrentState.AddUniform("baseLayerIndex", (float) baseLayerIndex);
 
             //Activate Recoloring
             shader.CurrentState.AddUniform("recolor_flag", 0.0f);
@@ -545,6 +560,7 @@ namespace NibbleNMSPlugin
 
 
             //Upload DiffuseTextures as alphaTextures
+            int sampler_id = 0;
             for (int i = 0; i < 8; i++)
             {
                 if (difftextures[i] != null)
@@ -552,13 +568,17 @@ namespace NibbleNMSPlugin
                 else
                     tex = dMask;
 
-
+                string uniform_str = "alphaTex" + "[" + i + "]";
                 NbSamplerState s = new()
                 {
+                    SamplerID = sampler_id,
+                    ShaderLocation = shader.uniformLocations[uniform_str].loc,
+                    ShaderBinding = uniform_str,
                     Texture = tex
                 };
+                sampler_id += 1;
 
-                shader.CurrentState.AddSampler("alphaTex" + "[" + i + "]", s);
+                shader.CurrentState.AddSampler(uniform_str, s);
 
             }
 
@@ -570,17 +590,21 @@ namespace NibbleNMSPlugin
                 else
                     tex = dMask;
 
+                string uniform_str = "mainTex" + "[" + i + "]";
                 NbSamplerState s = new()
                 {
+                    SamplerID = sampler_id,
+                    ShaderLocation = shader.uniformLocations[uniform_str].loc,
+                    ShaderBinding = uniform_str,
                     Texture = tex
                 };
+                sampler_id += 1;
 
-                shader.CurrentState.AddSampler("mainTex" + "[" + i + "]", s);
+                shader.CurrentState.AddSampler(uniform_str, s);
             }
             
             
             //Use the RenderQuad Method to do the job
-
             NbCore.Systems.RenderingSystem renderSystem = engine.renderSys;
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             renderSystem.Renderer.RenderQuad(engine.GetMesh(NbHasher.Hash("default_renderquad")),
