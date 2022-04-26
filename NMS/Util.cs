@@ -137,24 +137,24 @@ namespace NibbleNMSPlugin
             return PluginState.PluginRef.EngineRef.CreateTexture(data, path, false);
         }
 
-        public static void loadSamplerTexture(NbSampler sampler, TextureManager texMgr)
+        public static void loadSamplerTexture(string texpath, NbSampler sampler, TextureManager texMgr)
         {
-            if (sampler.Map == "")
+            if (texpath == "")
                 return;
 
             NbTexture tex;
             //Try to load the texture
-            if (texMgr.Contains(sampler.Map))
+            if (texMgr.Contains(texpath))
             {
-                tex = texMgr.Get(sampler.Map);
+                tex = texMgr.Get(texpath);
             }
             else
             {
-                tex = LoadNMSTexture(sampler.Map);
+                tex = LoadNMSTexture(texpath);
                 if (tex is null)
                 {
                     //Reset shader binding if no texture is loaded
-                    sampler.State.TextureID = -1;
+                    sampler.State.Texture = null;
                     sampler.State.SamplerID = -1;
                     sampler.State.ShaderBinding = "";
                     return;
@@ -168,45 +168,5 @@ namespace NibbleNMSPlugin
             sampler.SetTexture(tex);
         }
 
-        public static void PrepareProcGenSamplers(MeshMaterial mat, TextureManager texMgr)
-        {
-            //Workaround for Procedurally Generated Samplers
-            //I need to check if the diffuse sampler is procgen and then force the maps
-            //on the other samplers with the appropriate names
-            //TODO: Go through the process of loading procedural textures again. I don't like this at all
-
-            foreach (NbSampler s in mat.Samplers)
-            {
-                //Check if the first sampler is procgen
-                if (s.isProcGen)
-                {
-                    string name = s.Map;
-
-                    //Properly assemble the mask and the normal map names
-
-                    string[] split = name.Split('.');
-                    string pre_ext_name = "";
-                    for (int i = 0; i < split.Length - 1; i++)
-                        pre_ext_name += split[i] + '.';
-
-                    if (mat.SamplerMap.ContainsKey("mpCustomPerMaterial.gMasksMap"))
-                    {
-                        string new_name = pre_ext_name + "MASKS.DDS";
-                        mat.SamplerMap["mpCustomPerMaterial.gMasksMap"].Map = new_name;
-                        mat.SamplerMap["mpCustomPerMaterial.gMasksMap"].SetTexture(texMgr.Get(new_name));
-                    }
-                    else if (mat.SamplerMap.ContainsKey("mpCustomPerMaterial.gNormalMap"))
-                    {
-                        string new_name = pre_ext_name + "NORMAL.DDS";
-                        mat.SamplerMap["mpCustomPerMaterial.gNormalMap"].Map = new_name;
-                        mat.SamplerMap["mpCustomPerMaterial.gNormalMap"].SetTexture(texMgr.Get(new_name));
-                    }
-                    break;
-                }
-            }
-        }
-
-        
-        
     }
 }

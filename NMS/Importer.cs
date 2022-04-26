@@ -312,7 +312,6 @@ namespace NibbleNMSPlugin
                 case "gDiffuse2Map":
                 case "gMasksMap":
                     sam.Name = ms.Name.Value;
-                    sam.Map = ms.Map.Value;
                     sam.State.SamplerID = Util.MapTexUnitToSampler[sam.Name];
                     sam.State.ShaderBinding = "mpCustomPerMaterial." + ms.Name.Value;
                     break;
@@ -325,7 +324,7 @@ namespace NibbleNMSPlugin
             //Save texture to material
             string[] split = ms.Map.Value.Split('.');
             
-            if (!texMgr.Contains(sam.Map))
+            if (!texMgr.Contains(ms.Map.Value))
             {
                 string temp = "";
                 if (sam.Name == "gDiffuseMap")
@@ -334,15 +333,12 @@ namespace NibbleNMSPlugin
                     temp = split[0];
                     //Construct main filename
 
-                    if (sam.Map.Contains("ACC_EAR1"))
-                        Console.WriteLine("Test");
-
                     string texMbin = temp + ".TEXTURE.MBIN";
 
                     //Detect Procedural Texture
                     if (FileUtils.NMSFileToArchiveMap.Keys.Contains(texMbin))
                     {
-                        TextureMixer.combineTextures(sam.Map, Palettes.paletteSel, ref texMgr);
+                        TextureMixer.combineTextures(ms.Map.Value, Palettes.paletteSel, ref texMgr);
                         //Override Map
                         sam.isProcGen = true;
                     }
@@ -350,7 +346,7 @@ namespace NibbleNMSPlugin
             }
 
             //Load the texture to the sampler
-            Util.loadSamplerTexture(sam, texMgr);
+            Util.loadSamplerTexture(ms.Map.Value, sam, texMgr);
             
             return sam;
         }

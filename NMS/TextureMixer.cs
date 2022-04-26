@@ -364,8 +364,7 @@ namespace NibbleNMSPlugin
 
                 NbSamplerState s = new()
                 {
-                    Target = tex.Data.target,
-                    TextureID = tex.texID
+                    Texture = tex
                 };
 
                 shader.CurrentState.AddSampler("mainTex" + "[" + i + "]", s);
@@ -460,8 +459,7 @@ namespace NibbleNMSPlugin
 
                 NbSamplerState s = new()
                 {
-                    Target = tex.Data.target,
-                    TextureID = tex.texID
+                    Texture = tex
                 };
 
                 shader.CurrentState.AddSampler("alphaTex" + "[" + i + "]", s);
@@ -479,8 +477,7 @@ namespace NibbleNMSPlugin
 
                 NbSamplerState s = new()
                 {
-                    Target = tex.Data.target,
-                    TextureID = tex.texID
+                    Texture = tex
                 };
 
                 shader.CurrentState.AddSampler("mainTex" + "[" + i + "]", s);
@@ -558,8 +555,7 @@ namespace NibbleNMSPlugin
 
                 NbSamplerState s = new()
                 {
-                    Target = tex.Data.target,
-                    TextureID = tex.texID
+                    Texture = tex
                 };
 
                 shader.CurrentState.AddSampler("alphaTex" + "[" + i + "]", s);
@@ -576,8 +572,7 @@ namespace NibbleNMSPlugin
 
                 NbSamplerState s = new()
                 {
-                    Target = tex.Data.target,
-                    TextureID = tex.texID
+                    Texture = tex
                 };
 
                 shader.CurrentState.AddSampler("mainTex" + "[" + i + "]", s);
