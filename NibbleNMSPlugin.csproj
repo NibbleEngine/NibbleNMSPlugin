@@ -5,7 +5,7 @@
 	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <BaseOutputPath>..\Build\Plugins</BaseOutputPath>
+    <BaseOutputPath>Build</BaseOutputPath>
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 
@@ -13,34 +13,34 @@
     <PackageReference Include="Gameloop.Vdf" Version="0.6.1" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="OpenTK.Graphics" Version="4.7.1" />
+    <PackageReference Include="OpenTK.Mathematics" Version="4.7.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="$(SolutionDir)Resources\default.dds" />
-    <EmbeddedResource Include="$(SolutionDir)Resources\default_mask.dds" />
+    <EmbeddedResource Include="Resources\default.dds" />
+    <EmbeddedResource Include="Resources\default_mask.dds" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\NibbleDLL\NibbleDLL.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
+	<Reference Include="Nibble">
+	  <HintPath>lib\Nibble.dll</HintPath>
+	</Reference>
     <Reference Include="ImGui.NET">
-      <HintPath>..\lib\ImGui.NET.dll</HintPath>
+      <HintPath>lib\ImGui.NET.dll</HintPath>
     </Reference>
     <Reference Include="libMBIN">
-      <HintPath>..\lib\libMBIN.dll</HintPath>
+      <HintPath>lib\libMBIN.dll</HintPath>
     </Reference>
     <Reference Include="libPSARC">
-      <HintPath>..\lib\libPSARC.dll</HintPath>
+      <HintPath>lib\libPSARC.dll</HintPath>
     </Reference>
   </ItemGroup>
 
-  
+	
   <Target Name="CopyCustomContent" AfterTargets="Build">
     <Message Text="Hooya $(TargetPath)" Importance="high" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(SolutionDir)Build\Plugins" />
   </Target>
-    
 
 </Project>

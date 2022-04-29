@@ -1,19 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
-using libMBIN;
 using NbCore.Math;
 using libMBIN.NMS.Toolkit;
-using System.Security.Permissions;
-using System.Linq;
-using OpenTK.Graphics.OpenGL4;
-using Microsoft.Win32;
-using Newtonsoft.Json;
-using Path = System.IO.Path;
 using NbCore;
-using System.Windows;
-using System.Reflection;
-using libMBIN.NMS;
 
 namespace NibbleNMSPlugin
 {

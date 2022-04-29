@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System;
 using System.Reflection;
 using System.Globalization;
-using OpenTK;
 using NbCore.Math;
 using libMBIN;
 using libMBIN.NMS.Toolkit;
@@ -16,7 +15,6 @@ using NbCore.Utils;
 using libMBIN.NMS.GameComponents;
 using libMBIN.NMS;
 using NbCore.Common;
-using Quaternion = OpenTK.Mathematics.Quaternion;
 
 
 namespace NibbleNMSPlugin
