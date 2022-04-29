@@ -334,7 +334,7 @@ namespace NibbleNMSPlugin
 
             Engine engine = RenderState.engineRef;
 
-            NbShader shader = engine.renderSys.ShaderMgr.GetShaderByType(NbShaderType.TEXTURE_MIX_SHADER);
+            NbShader shader = engine.GetSystem<NbCore.Systems.RenderingSystem>().ShaderMgr.GetShaderByType(NbShaderType.TEXTURE_MIX_SHADER);
             shader.ClearCurrentState();
 
             ////Base Layers
@@ -386,7 +386,7 @@ namespace NibbleNMSPlugin
 
             //Use the RenderQuad Method to do the job
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            NbCore.Systems.RenderingSystem renderSystem = engine.renderSys;
+            NbCore.Systems.RenderingSystem renderSystem = engine.GetSystem<NbCore.Systems.RenderingSystem>();
             renderSystem.Renderer.RenderQuad(engine.GetMesh(NbHasher.Hash("default_renderquad")),
                 shader, shader.CurrentState);
 
@@ -425,7 +425,7 @@ namespace NibbleNMSPlugin
 
             Engine engine = RenderState.engineRef;
 
-            NbShader shader = engine.renderSys.ShaderMgr.GetShaderByType(NbShaderType.TEXTURE_MIX_SHADER);
+            NbShader shader = engine.GetSystem<NbCore.Systems.RenderingSystem>().ShaderMgr.GetShaderByType(NbShaderType.TEXTURE_MIX_SHADER);
             shader.ClearCurrentState();
 
             //Base Layers
@@ -495,7 +495,7 @@ namespace NibbleNMSPlugin
 
 
             //Use the RenderQuad Method to do the job
-            NbCore.Systems.RenderingSystem renderSystem = engine.renderSys;
+            NbCore.Systems.RenderingSystem renderSystem = engine.GetSystem<NbCore.Systems.RenderingSystem>();
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             renderSystem.Renderer.RenderQuad(engine.GetMesh(NbHasher.Hash("default_renderquad")),
                 shader, shader.CurrentState);
@@ -532,7 +532,7 @@ namespace NibbleNMSPlugin
 
             Engine engine = RenderState.engineRef;
 
-            NbShader shader = engine.renderSys.ShaderMgr.GetShaderByType(NbShaderType.TEXTURE_MIX_SHADER);
+            NbShader shader = engine.GetSystem<NbCore.Systems.RenderingSystem>().ShaderMgr.GetShaderByType(NbShaderType.TEXTURE_MIX_SHADER);
             shader.ClearCurrentState();
 
             //Base Layers
@@ -605,7 +605,7 @@ namespace NibbleNMSPlugin
             
             
             //Use the RenderQuad Method to do the job
-            NbCore.Systems.RenderingSystem renderSystem = engine.renderSys;
+            NbCore.Systems.RenderingSystem renderSystem = engine.GetSystem<NbCore.Systems.RenderingSystem>();
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             renderSystem.Renderer.RenderQuad(engine.GetMesh(NbHasher.Hash("default_renderquad")),
                 shader, shader.CurrentState);

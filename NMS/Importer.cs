@@ -385,7 +385,7 @@ namespace NibbleNMSPlugin
             //Copy flags and uniforms
 
             for (int i = 0; i < md.Flags.Count; i++)
-                mat.add_flag((MaterialFlagEnum) md.Flags[i].MaterialFlag);
+                mat.AddFlag((MaterialFlagEnum) md.Flags[i].MaterialFlag);
 
             //Get Samplers
             for (int i = 0; i < md.Samplers.Count; i++)
@@ -680,9 +680,6 @@ namespace NibbleNMSPlugin
             {
                 JointBindingData jdata = new();
                 jdata.Load(fs);
-                //Copy Matrix
-                Array.Copy(MathUtils.convertMat(jdata.invBindMatrix), 0, geom.invBMats, 16 * i, 16);
-                //Store the struct
                 geom.jointData.Add(jdata);
             }
 
@@ -862,10 +859,10 @@ namespace NibbleNMSPlugin
         public static GeomObject ImportGeometry(string geomfile)
         {
             GeomObject gobject = null;
-            if (RenderState.engineRef.renderSys.GeometryMgr.HasGeom(geomfile))
+            if (RenderState.engineRef.GetSystem<NbCore.Systems.RenderingSystem>().GeometryMgr.HasGeom(geomfile))
             {
                 //Load from dict
-                gobject = RenderState.engineRef.renderSys.GeometryMgr.GetGeom(geomfile);
+                gobject = RenderState.engineRef.GetSystem<NbCore.Systems.RenderingSystem>().GeometryMgr.GetGeom(geomfile);
 
             }
             else
@@ -1118,10 +1115,10 @@ namespace NibbleNMSPlugin
                 GLSLShaderSource conf_fs = RenderState.engineRef.GetShaderSourceByFilePath("Shaders/Simple_FS.glsl");
                 NbShaderMode conf_mode = NbShaderMode.DEFFERED;
 
-                if (mat.has_flag(MaterialFlagEnum._F02_SKINNED) || (mmd.LastSkinMat - mmd.FirstSkinMat > 0))
+                if (mat.HasFlag(MaterialFlagEnum._F02_SKINNED) || (mmd.LastSkinMat - mmd.FirstSkinMat > 0))
                     conf_mode |= NbShaderMode.SKINNED;
 
-                if (!mat.has_flag(MaterialFlagEnum._F07_UNLIT))
+                if (!mat.HasFlag(MaterialFlagEnum._F07_UNLIT))
                     conf_mode |= NbShaderMode.LIT;
 
                 ulong conf_hash = GLSLShaderConfig.GetHash(conf_vs, conf_fs, null, null, null, conf_mode);
@@ -1133,16 +1130,7 @@ namespace NibbleNMSPlugin
                 }
 
                 //Set Material Shader
-                ulong shader_hash = EngineRef.CalculateShaderHash(conf, EngineRef.GetMaterialShaderDirectives(mat));
-                NbShader shader = EngineRef.GetShaderByHash(shader_hash);
-
-                if (shader == null)
-                {
-                    shader = EngineRef.CreateShader(conf, EngineRef.GetMaterialShaderDirectives(mat));
-                    EngineRef.CompileShader(shader);
-                }
-
-                mat.AttachShader(shader);
+                EngineRef.SetMaterialShader(mat, conf);
 
                 //Load Mesh Data
                 NbMeshData md = gobject.GetMeshData(mmdHash); //TODO: Check that function
