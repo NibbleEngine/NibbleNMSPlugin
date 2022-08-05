@@ -123,7 +123,8 @@ namespace NibbleNMSPlugin
             byte[] data = new byte[s.Length];
             s.Read(data, 0, data.Length);
             s.Close();
-            return PluginState.PluginRef.EngineRef.CreateTexture(data, path, false);
+            return PluginState.PluginRef.EngineRef.CreateTexture(data, path, 
+                NbTextureWrapMode.Repeat, NbTextureFilter.LinearMipmapLinear, NbTextureFilter.Linear, false);
         }
 
         public static void loadSamplerTexture(string texpath, NbSampler sampler, TextureManager texMgr)
@@ -143,18 +144,15 @@ namespace NibbleNMSPlugin
                 if (tex is null)
                 {
                     //Reset shader binding if no texture is loaded
-                    sampler.State.Texture = null;
-                    sampler.State.SamplerID = -1;
-                    sampler.State.ShaderBinding = "";
+                    sampler.Texture = null;
+                    sampler.SamplerID = -1;
+                    sampler.ShaderBinding = "";
                     return;
                 }
-                    
-                tex.palOpt = new PaletteOpt(false);
-                tex.procColor = new NbVector4(1.0f, 1.0f, 1.0f, 0.0f);
             }
 
             //Set Sampler Properties
-            sampler.SetTexture(tex);
+            sampler.Texture = tex;
         }
 
     }

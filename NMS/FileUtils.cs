@@ -137,26 +137,26 @@ namespace NibbleNMSPlugin
             {
                 if (ex is DirectoryNotFoundException || ex is FileNotFoundException)
                 {
-                    NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef,
+                    NbCore.Common.Callbacks.Log(PluginState.PluginRef,
                                                        "File " + effective_filepath + " Not Found...",
                                                        NbCore.LogVerbosityLevel.ERROR);
                 }
                     
                 else if (ex is IOException)
                 {
-                    NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, 
+                    NbCore.Common.Callbacks.Log(PluginState.PluginRef, 
                                                        "File " + effective_filepath + " problem...",
                                                        NbCore.LogVerbosityLevel.ERROR);
                 }
                     
                 else if (ex is TargetInvocationException)
                 {
-                    NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "libMBIN failed to decompile file. If this is a vanilla file, contact the MbinCompiler developer",
+                    NbCore.Common.Callbacks.Log(PluginState.PluginRef, "libMBIN failed to decompile file. If this is a vanilla file, contact the MbinCompiler developer",
                     NbCore.LogVerbosityLevel.ERROR);
                 }
                 else
                 {
-                    NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef,
+                    NbCore.Common.Callbacks.Log(PluginState.PluginRef,
                                                        "Unhandled Exception " + ex.Message,
                                                        NbCore.LogVerbosityLevel.ERROR);
                 }
@@ -298,11 +298,11 @@ namespace NibbleNMSPlugin
             val = fetchSteamGameInstallationDir() as string;
             if (val != null)
             {
-                NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Found Steam Version: " + val, NbCore.LogVerbosityLevel.INFO);
+                NbCore.Common.Callbacks.Log(PluginState.PluginRef, "Found Steam Version: " + val, NbCore.LogVerbosityLevel.INFO);
                 return val;
             }
             else
-                NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Unable to find Steam Version: ", NbCore.LogVerbosityLevel.INFO);
+                NbCore.Common.Callbacks.Log(PluginState.PluginRef, "Unable to find Steam Version: ", NbCore.LogVerbosityLevel.INFO);
 
             //Check GOG32
 
@@ -310,21 +310,21 @@ namespace NibbleNMSPlugin
 
             if (val != null)
             {
-                NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Found GOG32 Version: " + val, NbCore.LogVerbosityLevel.INFO);
+                NbCore.Common.Callbacks.Log(PluginState.PluginRef, "Found GOG32 Version: " + val, NbCore.LogVerbosityLevel.INFO);
                 return val;
             }
             else
-                NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Unable to find GOG32 Version: " + val, NbCore.LogVerbosityLevel.INFO);
+                NbCore.Common.Callbacks.Log(PluginState.PluginRef, "Unable to find GOG32 Version: " + val, NbCore.LogVerbosityLevel.INFO);
 
             //Check GOG64
             val = Registry.GetValue(gog64_keyname, gog64_keyval, "") as string;
             if (val != null)
             {
-                NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Found GOG64 Version: " + val, NbCore.LogVerbosityLevel.INFO);
+                NbCore.Common.Callbacks.Log(PluginState.PluginRef, "Found GOG64 Version: " + val, NbCore.LogVerbosityLevel.INFO);
                 return val;
             }
             else
-                NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Unable to find GOG64 Version: " + val, NbCore.LogVerbosityLevel.INFO);
+                NbCore.Common.Callbacks.Log(PluginState.PluginRef, "Unable to find GOG64 Version: " + val, NbCore.LogVerbosityLevel.INFO);
 
             return "";
         }
@@ -345,12 +345,12 @@ namespace NibbleNMSPlugin
 
             if (steam_path is null)
             {
-                NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Failed to find Steam Installation: ", NbCore.LogVerbosityLevel.INFO);
+                NbCore.Common.Callbacks.Log(PluginState.PluginRef, "Failed to find Steam Installation: ", NbCore.LogVerbosityLevel.INFO);
                 return null;
             }
 
-            NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Found Steam Installation: " + steam_path, NbCore.LogVerbosityLevel.INFO);
-            NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Searching for NMS in the default steam directory...", NbCore.LogVerbosityLevel.INFO);
+            NbCore.Common.Callbacks.Log(PluginState.PluginRef, "Found Steam Installation: " + steam_path, NbCore.LogVerbosityLevel.INFO);
+            NbCore.Common.Callbacks.Log(PluginState.PluginRef, "Searching for NMS in the default steam directory...", NbCore.LogVerbosityLevel.INFO);
 
             //At first try to find acf entries in steam installation dir
             foreach (string path in Directory.GetFiles(Path.Combine(steam_path, "steamapps")))
@@ -362,7 +362,7 @@ namespace NibbleNMSPlugin
                     return Path.Combine(steam_path, @"steamapps\common\No Man's Sky\GAMEDATA");
             }
 
-            NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "NMS not found in default folders. Searching Steam Libraries...", NbCore.LogVerbosityLevel.INFO);
+            NbCore.Common.Callbacks.Log(PluginState.PluginRef, "NMS not found in default folders. Searching Steam Libraries...", NbCore.LogVerbosityLevel.INFO);
 
             //If that did't work try to load the libraryfolders.vdf
             dynamic libraryfolders = VdfConvert.Deserialize(File.ReadAllText(Path.Combine(steam_path, @"steamapps\libraryfolders.vdf")));
@@ -384,7 +384,7 @@ namespace NibbleNMSPlugin
                 }
             }
             
-            NbCore.Common.Callbacks.Logger.Log(PluginState.PluginRef, "Unable to locate Steam Installation...", NbCore.LogVerbosityLevel.INFO);
+            NbCore.Common.Callbacks.Log(PluginState.PluginRef, "Unable to locate Steam Installation...", NbCore.LogVerbosityLevel.INFO);
             return null;
         }
 

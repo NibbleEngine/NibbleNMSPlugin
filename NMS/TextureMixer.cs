@@ -182,8 +182,6 @@ namespace NibbleNMSPlugin
                     {
                         //Get NMS texture data
                         NbTexture tex = Util.LoadNMSTexture(partNameDiff);
-                        tex.palOpt = palOpt;
-                        tex.procColor = palColor;
                         //Store to master texture manager
                         texMgr.Add(tex.Path, tex);
 
@@ -297,8 +295,8 @@ namespace NibbleNMSPlugin
             
             //Diffuse Output
             fbo_tex = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba, texWidth, texHeight, PixelFormat.Rgba, PixelType.UnsignedByte, true);
-            GraphicsAPI.setupTextureParameters(fbo_tex, (int)TextureWrapMode.Repeat,
-                (int)TextureMagFilter.Linear, (int)TextureMinFilter.LinearMipmapLinear, 4.0f);
+            GraphicsAPI.setupTextureParameters(fbo_tex, NbTextureWrapMode.Repeat,
+                NbTextureFilter.Linear, NbTextureFilter.LinearMipmapNearest, 4.0f);
             
 
             //Create New RenderBuffer for the diffuse
@@ -365,7 +363,7 @@ namespace NibbleNMSPlugin
 
 
                 string uniform_str = "mainTex" + "[" + i + "]";
-                NbSamplerState s = new()
+                NbSampler s = new()
                 {
                     SamplerID = i,
                     ShaderLocation = shader.uniformLocations[uniform_str].loc,
@@ -393,8 +391,8 @@ namespace NibbleNMSPlugin
 
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());
             NbTexture out_tex_diffuse = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba8, texWidth, texHeight, PixelFormat.Rgba, PixelType.UnsignedByte, true);
-            GraphicsAPI.setupTextureParameters(out_tex_diffuse, (int)TextureWrapMode.Repeat,
-                (int)TextureMagFilter.Linear, (int)TextureMinFilter.LinearMipmapLinear, 4.0f);
+            GraphicsAPI.setupTextureParameters(out_tex_diffuse, NbTextureWrapMode.Repeat,
+                NbTextureFilter.Linear, NbTextureFilter.LinearMipmapLinear, 4.0f);
             
             //Copy the read buffers to the 
             GL.BindTexture(GraphicsAPI.TextureTargetMap[out_tex_diffuse.Data.target], out_tex_diffuse.texID);
@@ -461,7 +459,7 @@ namespace NibbleNMSPlugin
                     tex = dMask;
 
                 string uniform_str = "alphaTex" + "[" + i + "]";
-                NbSamplerState s = new()
+                NbSampler s = new()
                 {
                     SamplerID = sampler_id,
                     ShaderLocation = shader.uniformLocations[uniform_str].loc,
@@ -482,7 +480,7 @@ namespace NibbleNMSPlugin
                     tex = dMask;
 
                 string uniform_str = "mainTex" + "[" + i + "]";
-                NbSamplerState s = new()
+                NbSampler s = new()
                 {
                     SamplerID = sampler_id,
                     ShaderLocation = shader.uniformLocations[uniform_str].loc,
@@ -502,8 +500,8 @@ namespace NibbleNMSPlugin
 
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());
             NbTexture out_tex_mask = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba8, texWidth, texHeight, PixelFormat.Rgba, PixelType.UnsignedByte, true);
-            GraphicsAPI.setupTextureParameters(out_tex_mask, (int)TextureWrapMode.Repeat,
-                (int)TextureMagFilter.Linear, (int)TextureMinFilter.LinearMipmapLinear, 4.0f);
+            GraphicsAPI.setupTextureParameters(out_tex_mask, NbTextureWrapMode.Repeat,
+                NbTextureFilter.Linear, NbTextureFilter.LinearMipmapLinear, 4.0f);
             
             //Copy the read buffers to the 
             GL.BindTexture(GraphicsAPI.TextureTargetMap[out_tex_mask.Data.target], out_tex_mask.texID);
@@ -569,7 +567,7 @@ namespace NibbleNMSPlugin
                     tex = dMask;
 
                 string uniform_str = "alphaTex" + "[" + i + "]";
-                NbSamplerState s = new()
+                NbSampler s = new()
                 {
                     SamplerID = sampler_id,
                     ShaderLocation = shader.uniformLocations[uniform_str].loc,
@@ -591,7 +589,7 @@ namespace NibbleNMSPlugin
                     tex = dMask;
 
                 string uniform_str = "mainTex" + "[" + i + "]";
-                NbSamplerState s = new()
+                NbSampler s = new()
                 {
                     SamplerID = sampler_id,
                     ShaderLocation = shader.uniformLocations[uniform_str].loc,
@@ -613,8 +611,8 @@ namespace NibbleNMSPlugin
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());
 
             NbTexture out_tex_normal = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba8, texWidth, texHeight, PixelFormat.Rgba, PixelType.UnsignedByte, true);
-            GraphicsAPI.setupTextureParameters(out_tex_normal, (int)TextureWrapMode.Repeat,
-                (int)TextureMagFilter.Linear, (int)TextureMinFilter.LinearMipmapLinear, 4.0f);
+            GraphicsAPI.setupTextureParameters(out_tex_normal, NbTextureWrapMode.Repeat,
+                NbTextureFilter.Linear, NbTextureFilter.LinearMipmapLinear, 4.0f);
             
             //Copy the read buffers to the 
 

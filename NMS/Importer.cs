@@ -36,7 +36,7 @@ namespace NibbleNMSPlugin
         //private static NbAnimationGroup ActiveAnimationGroup = null;
         private static TextureManager localTexMgr = new();
         private static Dictionary<ulong, AnimationData> localAnimationDataDictionary = new();
-        private static Dictionary<string, MeshMaterial> localMaterialDictionary = new();
+        private static Dictionary<string, NbMaterial> localMaterialDictionary = new();
         private static Engine EngineRef;
 
         public static void ClearState()
@@ -137,15 +137,11 @@ namespace NibbleNMSPlugin
                 //Init dictionary entries
                 ad.Nodes.Add(node.Node);
                 
-                ad.Rotations[node.Node] = new List<NbQuaternion>(metaData.FrameCount);
-                ad.Translations[node.Node] = new List<NbVector3>(metaData.FrameCount);
-                ad.Scales[node.Node] = new List<NbVector3>(metaData.FrameCount);
-
                 for (int i = 0; i < metaData.FrameCount; i++)
                 {
-                    ad.Rotations[node.Node].Add(Util.fetchRotQuaternion(node, metaData, i));
-                    ad.Translations[node.Node].Add(Util.fetchTransVector(node, metaData, i));
-                    ad.Scales[node.Node].Add(Util.fetchScaleVector(node, metaData, i));
+                    ad.SetNodeRotation(node.Node, i, Util.fetchRotQuaternion(node, metaData, i));
+                    ad.SetNodeTranslation(node.Node, i, Util.fetchTransVector(node, metaData, i));
+                    ad.SetNodeScale(node.Node, i, Util.fetchScaleVector(node, metaData, i));
                 }
             }
 
@@ -284,21 +280,6 @@ namespace NibbleNMSPlugin
                 node.LODDistances.Add(attachment.LodDistances[i]);
         }
 
-        public static MeshMaterial ImportMaterial(string path, TextureManager input_texMgr)
-        {
-            //Load template
-            //Try to use libMBIN to load the Material files
-            TkMaterialData template = FileUtils.LoadNMSTemplate(path) as TkMaterialData;
-
-            if (template == null)
-                return EngineRef.GetMaterialByName("defaultMat");
-            
-            //Make new material based on the template
-            MeshMaterial mat = CreateMaterialFromStruct(template, input_texMgr);
-            
-            return mat;
-        }
-
         public static NbSampler CreateSamplerFromStruct(TkMaterialSampler ms, TextureManager texMgr)
         {
             NbSampler sam = new NbSampler();
@@ -310,8 +291,8 @@ namespace NibbleNMSPlugin
                 case "gDiffuse2Map":
                 case "gMasksMap":
                     sam.Name = ms.Name.Value;
-                    sam.State.SamplerID = Util.MapTexUnitToSampler[sam.Name];
-                    sam.State.ShaderBinding = "mpCustomPerMaterial." + ms.Name.Value;
+                    sam.SamplerID = Util.MapTexUnitToSampler[sam.Name];
+                    sam.ShaderBinding = "mpCustomPerMaterial." + ms.Name.Value;
                     break;
                 default:
                     PluginState.PluginRef.Log("Not sure how to handle Sampler " + ms.Name.Value, 
@@ -372,19 +353,43 @@ namespace NibbleNMSPlugin
             { "gCustomParams01Vec4", 6 }
         };
         
-        public static MeshMaterial CreateMaterialFromStruct(TkMaterialData md, TextureManager texMgr)
+        public static NbMaterial CreateMaterialFromStruct(TkMaterialData md, TextureManager texMgr)
         {
-            MeshMaterial mat = new()
+            NbMaterial mat = new()
             {
                 Name = md.Name,
                 Class = md.Class
             };
-            
+
             //Copy flags and uniforms
-
+            List<TkMaterialFlags.UberFlagEnum> temp_mat_flags = new();
             for (int i = 0; i < md.Flags.Count; i++)
-                mat.AddFlag((MaterialFlagEnum) md.Flags[i].MaterialFlag);
+                temp_mat_flags.Add((TkMaterialFlags.UberFlagEnum) md.Flags[i].MaterialFlag);
 
+            //Add Nibble supported flags
+            if (temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F01_DIFFUSEMAP))
+                mat.AddFlag(MaterialFlagEnum._NB_DIFFUSE_MAP);
+
+            if (temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F03_NORMALMAP))
+                mat.AddFlag(MaterialFlagEnum._NB_TWO_CHANNEL_NORMAL_MAP);
+
+            if (temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F07_UNLIT))
+                mat.AddFlag(MaterialFlagEnum._NB_UNLIT);
+
+            if (temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F21_VERTEXCOLOUR))
+                mat.AddFlag(MaterialFlagEnum._NB_VERTEX_COLOUR);
+
+            if (temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F25_ROUGHNESS_MASK) &&
+                temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F39_METALLIC_MASK) &&
+                temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F24_AOMAP))
+                mat.AddFlag(MaterialFlagEnum._NB_AO_METALLIC_ROUGHNESS_MAP);
+
+            if (temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F25_ROUGHNESS_MASK) &&
+                temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F39_METALLIC_MASK) &&
+                !temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F24_AOMAP))
+                mat.AddFlag(MaterialFlagEnum._NB_METALLIC_ROUGHNESS_MAP);
+
+            
             //Get Samplers
             for (int i = 0; i < md.Samplers.Count; i++)
             {
@@ -537,7 +542,61 @@ namespace NibbleNMSPlugin
             return mesh_desc;
         }
 
-        
+        private static JointBindingData LoadJointBindingData(ref Stream fs)
+        {
+            JointBindingData jbd = new();
+            //Binary Reader
+            BinaryReader br = new(fs);
+            //Lamest way to read a matrix
+            jbd.invBindMatrix.M11 = br.ReadSingle();
+            jbd.invBindMatrix.M12 = br.ReadSingle();
+            jbd.invBindMatrix.M13 = br.ReadSingle();
+            jbd.invBindMatrix.M14 = br.ReadSingle();
+            jbd.invBindMatrix.M21 = br.ReadSingle();
+            jbd.invBindMatrix.M22 = br.ReadSingle();
+            jbd.invBindMatrix.M23 = br.ReadSingle();
+            jbd.invBindMatrix.M24 = br.ReadSingle();
+            jbd.invBindMatrix.M31 = br.ReadSingle();
+            jbd.invBindMatrix.M32 = br.ReadSingle();
+            jbd.invBindMatrix.M33 = br.ReadSingle();
+            jbd.invBindMatrix.M34 = br.ReadSingle();
+            jbd.invBindMatrix.M41 = br.ReadSingle();
+            jbd.invBindMatrix.M42 = br.ReadSingle();
+            jbd.invBindMatrix.M43 = br.ReadSingle();
+            jbd.invBindMatrix.M44 = br.ReadSingle();
+
+            //Calculate Binding Matrix
+            NbVector3 BindTranslate = new();
+            NbVector3 BindScale = new();
+            NbQuaternion BindRotation = new();
+
+            //Get Translate
+            BindTranslate.X = br.ReadSingle();
+            BindTranslate.Y = br.ReadSingle();
+            BindTranslate.Z = br.ReadSingle();
+            //Get Quaternion
+            BindRotation.X = br.ReadSingle();
+            BindRotation.Y = br.ReadSingle();
+            BindRotation.Z = br.ReadSingle();
+            BindRotation.W = br.ReadSingle();
+            //Get Scale
+            BindScale.X = br.ReadSingle();
+            BindScale.Y = br.ReadSingle();
+            BindScale.Z = br.ReadSingle();
+
+            //Generate Matrix
+            jbd.BindMatrix = NbMatrix4.CreateScale(BindScale) *
+                         NbMatrix4.CreateFromQuaternion(BindRotation) *
+                         NbMatrix4.CreateTranslation(BindTranslate);
+
+            //Check Results [Except from Joint 0, the determinant of the multiplication is always 1,
+            // transforms should be good]
+            //Console.WriteLine((BindMatrix * invBindMatrix).Determinant);
+
+            return jbd;
+        }
+
+
         private static GeomObject ImportGeometry(ref Stream fs, ref Stream gfs)
         {
             //FileStream testfs = new FileStream("test.geom", FileMode.CreateNew);
@@ -676,9 +735,7 @@ namespace NibbleNMSPlugin
             geom.jointCount = jointCount;
             for (int i = 0; i < jointCount; i++)
             {
-                JointBindingData jdata = new();
-                jdata.Load(fs);
-                geom.jointData.Add(jdata);
+                geom.jointData.Add(LoadJointBindingData(ref fs));
             }
 
             //Get Vertex Starts
@@ -944,14 +1001,11 @@ namespace NibbleNMSPlugin
                 SceneMeshGroup = new()
                 {
                     ID = ImportedSceneCounter,
-                    Meshes = new()
+                    Meshes = new(),
+                    JointCount = gobject.jointData.Count
                 };
 
                 //Store skinMatrices from the geometry object to the scenegroup
-                SceneMeshGroup.boneRemapIndices = new int[gobject.boneRemap.Length];
-                for (int i = 0; i < gobject.boneRemap.Length; i++)
-                    SceneMeshGroup.boneRemapIndices[i] = gobject.boneRemap[i];
-
                 for (int i = 0; i < gobject.jointData.Count; i++)
                 {
                     SceneMeshGroup.JointBindingDataList[i].invBindMatrix = gobject.jointData[i].invBindMatrix;
@@ -1096,16 +1150,36 @@ namespace NibbleNMSPlugin
                 //Configure boneRemap properly in the mesh metadata
                 mmd.BoneRemapIndices = new int[mmd.LastSkinMat - mmd.FirstSkinMat];
                 for (int i=0; i<mmd.BoneRemapIndices.Length; i++)
-                    mmd.BoneRemapIndices[i] = gobject.boneRemap[mmd.FirstSkinMat + i];
+                {
+                    try
+                    {
+                        mmd.BoneRemapIndices[i] = gobject.boneRemap[mmd.FirstSkinMat + i];
+                    } catch (IndexOutOfRangeException ex)
+                    {
+                        mmd.BoneRemapIndices[i] = 0;
+                    }
+                }
 
                 //Load Material
-                MeshMaterial mat;
+
+                TkMaterialData nms_mat = FileUtils.LoadNMSTemplate(matname) as TkMaterialData;
+
+                NbMaterial mat;
                 if (localMaterialDictionary.ContainsKey(matname))
                     mat = localMaterialDictionary[matname];
                 else
                 {
-                    mat = ImportMaterial(matname, localTexMgr);
+                    if (nms_mat == null)
+                        mat = EngineRef.GetMaterialByName("defaultMat");
+                    else
+                    {
+                        //Make new material based on the template
+                        mat = CreateMaterialFromStruct(nms_mat, localTexMgr);
+
+                    }
+
                     localMaterialDictionary.Add(matname, mat);
+
                 }
 
                 //Get correct shader config
@@ -1113,11 +1187,17 @@ namespace NibbleNMSPlugin
                 GLSLShaderSource conf_fs = RenderState.engineRef.GetShaderSourceByFilePath("Shaders/Simple_FS.glsl");
                 NbShaderMode conf_mode = NbShaderMode.DEFFERED;
 
-                if (mat.HasFlag(MaterialFlagEnum._F02_SKINNED) || (mmd.LastSkinMat - mmd.FirstSkinMat > 0))
+
+                if ((nms_mat != null &&
+                    null != nms_mat.Flags.Find(x => x.MaterialFlag == TkMaterialFlags.MaterialFlagEnum._F02_)) || 
+                    (mmd.LastSkinMat - mmd.FirstSkinMat > 0))
                     conf_mode |= NbShaderMode.SKINNED;
 
-                if (!mat.HasFlag(MaterialFlagEnum._F07_UNLIT))
+                if ((nms_mat != null &&
+                    null == nms_mat.Flags.Find(x => x.MaterialFlag == TkMaterialFlags.MaterialFlagEnum._F07_)) ||
+                    (mmd.LastSkinMat - mmd.FirstSkinMat > 0))
                     conf_mode |= NbShaderMode.LIT;
+
 
                 ulong conf_hash = GLSLShaderConfig.GetHash(conf_vs, conf_fs, null, null, null, conf_mode);
 
@@ -1235,7 +1315,7 @@ namespace NibbleNMSPlugin
                 string collisionType = FileUtils.parseNMSTemplateAttrib(node.Attributes, "TYPE").ToUpper();
                 PluginState.PluginRef.Log($"Collision Detected {node.Name.Value} {collisionType}", LogVerbosityLevel.INFO);
                 
-                MeshMaterial collisionMat = EngineRef.GetMaterialByName("collisionMat");
+                NbMaterial collisionMat = EngineRef.GetMaterialByName("collisionMat");
 
                 //Create Collision Component
                 CollisionComponent cc = new();
