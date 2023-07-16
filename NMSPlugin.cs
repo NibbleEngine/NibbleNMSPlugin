@@ -227,8 +227,8 @@ namespace NibbleNMSPlugin
             //Create a separate thread to try and load PAK archives
             //Issue work request 
 
-            Thread t = new Thread(() => {
-                FileUtils.loadNMSArchives(this, Path.Combine(((NMSPluginSettings) Settings).GameDir, "PCBANKS"), 
+            Thread t = new(() => {
+                FileUtils.loadNMSArchives(this, Path.Combine(((NMSPluginSettings) Settings).GameDir, "GAMEDATA//PCBANKS"), 
                     ref open_file_enabled);
             });
             Log("Starting Work Thread.", LogVerbosityLevel.INFO);
@@ -242,16 +242,16 @@ namespace NibbleNMSPlugin
         private void AddDefaultShaders()
         {
             //Add Shader Sources
-            GLSLShaderSource vs = EngineRef.GetShaderSourceByFilePath("Shaders/texture_mixer_VS.glsl");
+            NbShaderSource vs = EngineRef.GetShaderSourceByFilePath("Assets/Shaders/Source/texture_mixer_VS.glsl");
             if (vs == null)
-                vs = new("Shaders/texture_mixer_VS.glsl", true);
-            
-            GLSLShaderSource fs = EngineRef.GetShaderSourceByFilePath("Shaders/texture_mixer_FS.glsl");
+                vs = new("Assets/Shaders/Source/texture_mixer_VS.glsl", true);
+
+            NbShaderSource fs = EngineRef.GetShaderSourceByFilePath("Assets/Shaders/Source/texture_mixer_FS.glsl");
             if (fs == null)
-                fs = new("Shaders/texture_mixer_FS.glsl", true);
+                fs = new("Assets/Shaders/Source/texture_mixer_FS.glsl", true);
 
             //Texture Mixing Shader
-            GLSLShaderConfig conf = EngineRef.CreateShaderConfig(vs, fs,
+            NbShaderConfig conf = EngineRef.CreateShaderConfig(vs, fs,
                                       null, null, null,
                                       NbShaderMode.DEFFERED, "TextureMix");
             EngineRef.RegisterEntity(conf);
@@ -265,6 +265,7 @@ namespace NibbleNMSPlugin
 
             shader.SetShaderConfig(conf);
             EngineRef.CompileShader(shader);
+            EngineRef.RegisterEntity(shader);
         }
 
         private void AddDefaultTextures()

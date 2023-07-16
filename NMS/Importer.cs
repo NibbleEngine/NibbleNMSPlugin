@@ -15,7 +15,7 @@ using NbCore.Utils;
 using libMBIN.NMS.GameComponents;
 using libMBIN.NMS;
 using NbCore.Common;
-
+using System.Runtime.CompilerServices;
 
 namespace NibbleNMSPlugin
 {
@@ -70,10 +70,9 @@ namespace NibbleNMSPlugin
         private static AnimPoseComponent CreateAnimPoseComponentFromStruct(TkAnimPoseComponentData apcd)
         {
             AnimPoseComponent apc = new AnimPoseComponent();
-
-            apc._poseData = new List<AnimPoseData>();
-    
             
+            apc._poseData = new List<NbAnimPoseData>();
+    
             //I really need to recheck the pose data files in order to remember what the fuck
             //I should do with pose animation data
             throw new NotImplementedException();
@@ -119,23 +118,22 @@ namespace NibbleNMSPlugin
 
             if (localAnimationDataDictionary.ContainsKey(admd.GetHash()))
                 return localAnimationDataDictionary[admd.GetHash()];
-            
 
-            AnimationData ad = new AnimationData()
-            {
-                MetaData = admd
-            };
 
             //Load Animation data
             TkAnimMetadata metaData = (TkAnimMetadata)FileUtils.LoadNMSTemplate(data.Filename);
 
-            ad.FrameCount = metaData.FrameCount;
+            AnimationData ad = new AnimationData()
+            {
+                MetaData = admd,
+                FrameCount = metaData.FrameCount
+            };
 
             for (int j = 0; j < metaData.NodeCount; j++)
             {
                 TkAnimNodeData node = metaData.NodeData[j];
                 //Init dictionary entries
-                ad.Nodes.Add(node.Node);
+                ad.AddNode(node.Node);
                 
                 for (int i = 0; i < metaData.FrameCount; i++)
                 {
@@ -219,15 +217,15 @@ namespace NibbleNMSPlugin
             //Load all LOD models as children to the node
             LODModelComponent lodmdlcomp = new();
             
-            for (int i = 0; i < component.LODModel.Count; i++)
+            for (int i = 0; i < component.LODModels.Count; i++)
             {
-                string filepath = component.LODModel[i].LODModel.Filename;
+                string filepath = component.LODModels[i].LODModel.Filename;
                 PluginState.PluginRef.Log("Loading LOD " + filepath, LogVerbosityLevel.INFO);
                 SceneGraphNode so = ImportScene(filepath);
                 //Create LOD Resource
                 LODModelResource lodres = new()
                 {
-                    FileName = component.LODModel[i].LODModel.Filename,
+                    FileName = component.LODModels[i].LODModel.Filename,
                     SceneRef = so,
                 };
                 lodmdlcomp.Resources.Add(lodres);
@@ -358,38 +356,39 @@ namespace NibbleNMSPlugin
             NbMaterial mat = new()
             {
                 Name = md.Name,
-                Class = md.Class
+                Class = NbMaterialClass.Default
             };
 
+            //TODO: Check if we need to support all the game material classes
+            
             //Copy flags and uniforms
-            List<TkMaterialFlags.UberFlagEnum> temp_mat_flags = new();
+            List<TkMaterialFlags.MaterialFlagEnum> temp_mat_flags = new();
             for (int i = 0; i < md.Flags.Count; i++)
-                temp_mat_flags.Add((TkMaterialFlags.UberFlagEnum) md.Flags[i].MaterialFlag);
+                temp_mat_flags.Add(md.Flags[i].MaterialFlag);
 
             //Add Nibble supported flags
-            if (temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F01_DIFFUSEMAP))
-                mat.AddFlag(MaterialFlagEnum._NB_DIFFUSE_MAP);
+            if (temp_mat_flags.Contains(TkMaterialFlags.MaterialFlagEnum._F01_DIFFUSEMAP))
+                mat.AddFlag(NbMaterialFlagEnum._NB_DIFFUSE_MAP);
 
-            if (temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F03_NORMALMAP))
-                mat.AddFlag(MaterialFlagEnum._NB_TWO_CHANNEL_NORMAL_MAP);
+            if (temp_mat_flags.Contains(TkMaterialFlags.MaterialFlagEnum._F03_NORMALMAP))
+                mat.AddFlag(NbMaterialFlagEnum._NB_TWO_CHANNEL_NORMAL_MAP);
 
-            if (temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F07_UNLIT))
-                mat.AddFlag(MaterialFlagEnum._NB_UNLIT);
+            if (temp_mat_flags.Contains(TkMaterialFlags.MaterialFlagEnum._F07_UNLIT))
+                mat.AddFlag(NbMaterialFlagEnum._NB_UNLIT);
 
-            if (temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F21_VERTEXCOLOUR))
-                mat.AddFlag(MaterialFlagEnum._NB_VERTEX_COLOUR);
+            if (temp_mat_flags.Contains(TkMaterialFlags.MaterialFlagEnum._F21_VERTEXCOLOUR))
+                mat.AddFlag(NbMaterialFlagEnum._NB_VERTEX_COLOUR);
 
-            if (temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F25_ROUGHNESS_MASK) &&
-                temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F39_METALLIC_MASK) &&
-                temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F24_AOMAP))
-                mat.AddFlag(MaterialFlagEnum._NB_AO_METALLIC_ROUGHNESS_MAP);
+            if (temp_mat_flags.Contains(TkMaterialFlags.MaterialFlagEnum._F25_ROUGHNESS_MASK) &&
+                temp_mat_flags.Contains(TkMaterialFlags.MaterialFlagEnum._F39_METALLIC_MASK) &&
+                temp_mat_flags.Contains(TkMaterialFlags.MaterialFlagEnum._F24_AOMAP))
+                mat.AddFlag(NbMaterialFlagEnum._NB_AO_METALLIC_ROUGHNESS_MAP);
 
-            if (temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F25_ROUGHNESS_MASK) &&
-                temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F39_METALLIC_MASK) &&
-                !temp_mat_flags.Contains(TkMaterialFlags.UberFlagEnum._F24_AOMAP))
-                mat.AddFlag(MaterialFlagEnum._NB_METALLIC_ROUGHNESS_MAP);
+            if (temp_mat_flags.Contains(TkMaterialFlags.MaterialFlagEnum._F25_ROUGHNESS_MASK) &&
+                temp_mat_flags.Contains(TkMaterialFlags.MaterialFlagEnum._F39_METALLIC_MASK) &&
+                !temp_mat_flags.Contains(TkMaterialFlags.MaterialFlagEnum._F24_AOMAP))
+                mat.AddFlag(NbMaterialFlagEnum._NB_METALLIC_ROUGHNESS_MAP);
 
-            
             //Get Samplers
             for (int i = 0; i < md.Samplers.Count; i++)
             {
@@ -416,11 +415,8 @@ namespace NibbleNMSPlugin
                 NbUniform uf = new()
                 {
                     Name = mu.Name,
-                    State = new()
-                    {
-                        ShaderBinding = $"mpCustomPerMaterial.uniforms[{MaterialUniformDict[mu.Name]}]",
-                        Type = NbUniformType.Vector4,
-                    },
+                    ShaderBinding = $"mpCustomPerMaterial.uniforms[{MaterialUniformDict[mu.Name]}]",
+                    Type = NbUniformType.Vector4,
                     Values = new(mu.Values.x,
                                 mu.Values.y,
                                 mu.Values.z,
@@ -433,7 +429,7 @@ namespace NibbleNMSPlugin
     
         
         
-        private static bufInfo get_bufInfo_item(int buf_id, int offset, uint stride, int count, int buf_type)
+        private static NbMeshBufferInfo get_bufInfo_item(int buf_id, int offset, int stride, int count, int buf_type)
         {
             int sem = buf_id;
             int off = offset;
@@ -442,7 +438,7 @@ namespace NibbleNMSPlugin
             bool normalize = false;
             if (text == "bPosition")
                 normalize = true;
-            return new bufInfo(sem, typ, count, stride, off, text, normalize);
+            return new NbMeshBufferInfo(sem, typ, count, stride, off, text, normalize);
         }
 
 
@@ -502,7 +498,7 @@ namespace NibbleNMSPlugin
             }
         }
 
-        private static string getDescr(List<bufInfo> lBufInfo)
+        private static string getDescr(List<NbMeshBufferInfo> lBufInfo)
         {
             string mesh_desc = "";
 
@@ -821,7 +817,7 @@ namespace NibbleNMSPlugin
                 var buf_elem_count = br.ReadInt32();
                 var buf_type = br.ReadInt32();
                 var buf_localoffset = br.ReadInt32();
-                var buf_stride = geom.vx_size;
+                var buf_stride = (int) geom.vx_size;
                 //var buf_test1 = br.ReadInt32();
                 //var buf_test2 = br.ReadInt32();
                 //var buf_test3 = br.ReadInt32();
@@ -848,8 +844,8 @@ namespace NibbleNMSPlugin
                 var buf_type = br.ReadInt32();
                 var buf_localoffset = br.ReadInt32();
 
-                bufInfo buf = get_bufInfo_item(buf_id,
-                    buf_localoffset, geom.small_vx_size, buf_elem_count, buf_type);
+                NbMeshBufferInfo buf = get_bufInfo_item(buf_id,
+                    buf_localoffset, (int) geom.small_vx_size, buf_elem_count, buf_type);
                 geom.smallBufInfo.Add(buf);
                 fs.Seek(0x10, SeekOrigin.Current);
             }
@@ -977,7 +973,6 @@ namespace NibbleNMSPlugin
         public static SceneGraphNode ImportScene(string path)
         {
             TkSceneNodeData template = (TkSceneNodeData)FileUtils.LoadNMSTemplate(path);
-
             PluginState.PluginRef.Log("Loading Objects from MBINFile", LogVerbosityLevel.INFO);
 
             string sceneName = template.Name;
@@ -1183,28 +1178,28 @@ namespace NibbleNMSPlugin
                 }
 
                 //Get correct shader config
-                GLSLShaderSource conf_vs = RenderState.engineRef.GetShaderSourceByFilePath("Shaders/Simple_VS.glsl");
-                GLSLShaderSource conf_fs = RenderState.engineRef.GetShaderSourceByFilePath("Shaders/Simple_FS.glsl");
+                NbShaderSource conf_vs = RenderState.engineRef.GetShaderSourceByFilePath("Assets/Shaders/Source/Simple_VS.glsl");
+                NbShaderSource conf_fs = RenderState.engineRef.GetShaderSourceByFilePath("Assets/Shaders/Source/ubershader_fs.glsl");
                 NbShaderMode conf_mode = NbShaderMode.DEFFERED;
 
 
                 if ((nms_mat != null &&
-                    null != nms_mat.Flags.Find(x => x.MaterialFlag == TkMaterialFlags.MaterialFlagEnum._F02_)) || 
+                    null != nms_mat.Flags.Find(x => x.MaterialFlag == TkMaterialFlags.MaterialFlagEnum._F02_SKINNED)) || 
                     (mmd.LastSkinMat - mmd.FirstSkinMat > 0))
                     conf_mode |= NbShaderMode.SKINNED;
 
                 if ((nms_mat != null &&
-                    null == nms_mat.Flags.Find(x => x.MaterialFlag == TkMaterialFlags.MaterialFlagEnum._F07_)) ||
+                    null == nms_mat.Flags.Find(x => x.MaterialFlag == TkMaterialFlags.MaterialFlagEnum._F07_UNLIT)) ||
                     (mmd.LastSkinMat - mmd.FirstSkinMat > 0))
                     conf_mode |= NbShaderMode.LIT;
 
+                
+                ulong conf_hash = NbShaderConfig.GetHash(conf_vs, conf_fs, null, null, null, conf_mode);
 
-                ulong conf_hash = GLSLShaderConfig.GetHash(conf_vs, conf_fs, null, null, null, conf_mode);
-
-                GLSLShaderConfig conf = EngineRef.GetShaderConfigByHash(conf_hash);
+                NbShaderConfig conf = EngineRef.GetShaderConfigByHash(conf_hash);
                 if ( conf == null)
                 {
-                    conf = new GLSLShaderConfig(conf_vs, conf_fs, null, null, null, conf_mode);
+                    conf = new NbShaderConfig(conf_vs, conf_fs, null, null, null, conf_mode);
                 }
 
                 //Set Material Shader
@@ -1217,6 +1212,7 @@ namespace NibbleNMSPlugin
                 NbMesh nm = new();
                 //TODO differentiate mesh from mesh stream hashes, technically 
                 //another mesh should be able to use the same data with a different hash
+                nm.Type = NbMeshType.Mesh;
                 nm.Hash = (ulong)mmd.GetHashCode() ^ md.Hash;
                 nm.Data = md;
                 nm.MetaData = mmd;
@@ -1224,7 +1220,7 @@ namespace NibbleNMSPlugin
 
                 //Set skinned flag
                 nm.Group = SceneMeshGroup;
-                SceneMeshGroup.Meshes.Add(nm);
+                SceneMeshGroup.AddMesh(nm);
                 
                 //Finally Add MeshComponent
                 MeshComponent mc = new()
@@ -1326,7 +1322,7 @@ namespace NibbleNMSPlugin
                 //Get Collision Mesh
                 if (collisionType == "MESH")
                 {
-                    cc.CollisionType = COLLISIONTYPES.MESH;
+                    cc.CollisionType = NbCollisionType.MESH;
 
                     //Generate Collision Mesh
                     //Fill Mesh Meta Data

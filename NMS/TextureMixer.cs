@@ -3,15 +3,13 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using OpenTK;
 using NbCore.Math;
 using NbCore.Platform.Graphics;
-using OpenTK.Graphics.OpenGL4;
 using NbCore;
 using NbCore.Common;
 using libMBIN.NMS.Toolkit;
 using System.Diagnostics;
-
+using System.Security.AccessControl;
 
 namespace NibbleNMSPlugin
 {
@@ -63,12 +61,13 @@ namespace NibbleNMSPlugin
             prepareTextures(texMgr, mbinPath);
 
             //Init framebuffer
+            GraphicsAPI renderer = RenderState.engineRef.GetRenderer();
+
             int tex_width = 0;
             int tex_height = 0;
             NbTexture fbo_tex = null;
-            int fbo = -1;
 
-            bool fbo_status = setupFrameBuffer(ref fbo, ref fbo_tex, ref tex_width, ref tex_height);
+            bool fbo_status = setupFrameBuffer(out FBO mix_fbo, ref fbo_tex, ref tex_width, ref tex_height, renderer);
 
             if (!fbo_status)
             {
@@ -89,11 +88,12 @@ namespace NibbleNMSPlugin
             normalTex.Path = temp + "NORMAL.DDS";
 
             //Bring Back screen
-            GL.Viewport(0, 0, old_vp_size[2], old_vp_size[3]);
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-            GL.DeleteFramebuffer(fbo);
-
-            //Delete Fraomebuffer Textures
+            renderer.DeleteFrameBuffer(mix_fbo);
+            GraphicsAPI.SetViewPortSize(0, 0, old_vp_size[2], old_vp_size[3]);
+            mix_fbo.Dispose();
+            renderer.DeleteFrameBuffer(mix_fbo);
+            
+            //Delete Framebuffer Texture
             fbo_tex.Dispose();
             
             //Add the new procedural textures to the textureManager
@@ -274,7 +274,7 @@ namespace NibbleNMSPlugin
             }
         }
 
-        private static bool setupFrameBuffer(ref int fbo, ref NbTexture fbo_tex, ref int texWidth, ref int texHeight)
+        private static bool setupFrameBuffer(out FBO fbo, ref NbTexture fbo_tex, ref int texWidth, ref int texHeight, GraphicsAPI renderer)
         {
             for (int i = 0; i < 8; i++)
             {
@@ -289,32 +289,39 @@ namespace NibbleNMSPlugin
             if (texWidth == 0 || texHeight == 0)
             {
                 //FUCKING HG HAS FUCKING EMPTY TEXTURES WTF AM I SUPPOSED TO MIX HERE
+                fbo = null;
                 return false;
             }
 
-            
+
             //Diffuse Output
-            fbo_tex = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba, texWidth, texHeight, PixelFormat.Rgba, PixelType.UnsignedByte, true);
+            fbo_tex = new NbTexture()
+            {
+                Data = new()
+                {
+                    target = NbTextureTarget.Texture2D,
+                    pif = NbTextureInternalFormat.RGBA8,
+                    Width = texWidth,
+                    Height = texHeight,
+                },
+            };
+            
+            GraphicsAPI.GenerateTexture(fbo_tex);
             GraphicsAPI.setupTextureParameters(fbo_tex, NbTextureWrapMode.Repeat,
                 NbTextureFilter.Linear, NbTextureFilter.LinearMipmapNearest, 4.0f);
-            
 
             //Create New RenderBuffer for the diffuse
-            fbo = GL.GenFramebuffer();
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo);
+            //Get Old Viewport Size
+            GraphicsAPI.GetViewPortSize(ref old_vp_size[0], ref old_vp_size[1]);
+            
+            fbo = renderer.CreateFrameBuffer(texWidth, texHeight, FBOOptions.None);
 
             //Attach Textures to this FBO
-            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, fbo_tex.texID, 0);
+            renderer.AddFrameBufferAttachment(fbo, fbo_tex, NbFBOAttachment.Attachment0);
 
-            //Check
-            Debug.Assert(GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) == FramebufferErrorCode.FramebufferComplete);
-
-            //Bind the FBO
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo);
-
-            //Set Viewport
-            GL.GetInteger(GetPName.Viewport, old_vp_size);
-            GL.Viewport(0, 0, texWidth, texHeight);
+            //Bind the FBO and activate it
+            GraphicsAPI.BindFrameBuffer(fbo);
+            renderer.ActivateFrameBuffer(fbo);
 
             return true;
         }
@@ -360,8 +367,6 @@ namespace NibbleNMSPlugin
                 else
                     tex = dMask;
 
-
-
                 string uniform_str = "mainTex" + "[" + i + "]";
                 NbSampler s = new()
                 {
@@ -383,24 +388,32 @@ namespace NibbleNMSPlugin
             }
 
             //Use the RenderQuad Method to do the job
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
             NbCore.Systems.RenderingSystem renderSystem = engine.GetSystem<NbCore.Systems.RenderingSystem>();
             renderSystem.Renderer.RenderQuad(engine.GetMesh(NbHasher.Hash("default_renderquad")),
                 shader, shader.CurrentState);
 
-
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());
-            NbTexture out_tex_diffuse = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba8, texWidth, texHeight, PixelFormat.Rgba, PixelType.UnsignedByte, true);
+            NbTexture out_tex_diffuse = new()
+            {
+                Data = new()
+                {
+                    Width = texWidth,
+                    Height = texHeight,
+                    pif = NbTextureInternalFormat.RGBA8,
+                    MagFilter = NbTextureFilter.Linear,
+                    MinFilter = NbTextureFilter.Linear,
+                    WrapMode = NbTextureWrapMode.Repeat
+                }
+            };
+                
+            GraphicsAPI.GenerateTexture(out_tex_diffuse);
             GraphicsAPI.setupTextureParameters(out_tex_diffuse, NbTextureWrapMode.Repeat,
                 NbTextureFilter.Linear, NbTextureFilter.LinearMipmapLinear, 4.0f);
+
+            renderSystem.Renderer.CopyFrameBufferChannelToTexture(NbFBOAttachment.Attachment0, out_tex_diffuse);
             
-            //Copy the read buffers to the 
-            GL.BindTexture(GraphicsAPI.TextureTargetMap[out_tex_diffuse.Data.target], out_tex_diffuse.texID);
-            GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
-            Callbacks.Assert(out_tex_diffuse.Data.target == NbTextureTarget.Texture2D,
-                            "fbo texture target is not correct");
-            GL.CopyTexSubImage2D(GraphicsAPI.TextureTargetMap[out_tex_diffuse.Data.target], 0, 0, 0, 0, 0, texWidth, texHeight);
-            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+            
             
             //Find name for textures
 
@@ -493,23 +506,32 @@ namespace NibbleNMSPlugin
 
 
             //Use the RenderQuad Method to do the job
+            GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
             NbCore.Systems.RenderingSystem renderSystem = engine.GetSystem<NbCore.Systems.RenderingSystem>();
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             renderSystem.Renderer.RenderQuad(engine.GetMesh(NbHasher.Hash("default_renderquad")),
                 shader, shader.CurrentState);
 
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());
-            NbTexture out_tex_mask = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba8, texWidth, texHeight, PixelFormat.Rgba, PixelType.UnsignedByte, true);
+            NbTexture out_tex_mask = new()
+            {
+                Data = new()
+                {
+                    Width = texWidth,
+                    Height = texHeight,
+                    pif = NbTextureInternalFormat.RGBA8,
+                    MagFilter = NbTextureFilter.Linear,
+                    MinFilter = NbTextureFilter.Linear,
+                    WrapMode = NbTextureWrapMode.Repeat
+                }
+            };
+
+            GraphicsAPI.GenerateTexture(out_tex_mask);
             GraphicsAPI.setupTextureParameters(out_tex_mask, NbTextureWrapMode.Repeat,
                 NbTextureFilter.Linear, NbTextureFilter.LinearMipmapLinear, 4.0f);
-            
-            //Copy the read buffers to the 
-            GL.BindTexture(GraphicsAPI.TextureTargetMap[out_tex_mask.Data.target], out_tex_mask.texID);
-            GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
-            GL.CopyTexSubImage2D(GraphicsAPI.TextureTargetMap[out_tex_mask.Data.target], 0, 0, 0, 0, 0, texWidth, texHeight);
-            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 
-            
+            renderSystem.Renderer.CopyFrameBufferChannelToTexture(NbFBOAttachment.Attachment0, out_tex_mask);
+
+
 #if (DUMP_TEXTURES)
             GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
             GraphicsAPI.DumpTexture(out_tex_mask, "mask");
@@ -600,26 +622,33 @@ namespace NibbleNMSPlugin
 
                 shader.CurrentState.AddSampler(uniform_str, s);
             }
-            
-            
+
+
             //Use the RenderQuad Method to do the job
+            GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
             NbCore.Systems.RenderingSystem renderSystem = engine.GetSystem<NbCore.Systems.RenderingSystem>();
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             renderSystem.Renderer.RenderQuad(engine.GetMesh(NbHasher.Hash("default_renderquad")),
                 shader, shader.CurrentState);
 
             //Console.WriteLine("MixTextures5, Last GL Error: " + GL.GetError());
+            NbTexture out_tex_normal = new()
+            {
+                Data = new()
+                {
+                    Width = texWidth,
+                    Height = texHeight,
+                    pif = NbTextureInternalFormat.RGBA8,
+                    MagFilter = NbTextureFilter.Linear,
+                    MinFilter = NbTextureFilter.Linear,
+                    WrapMode = NbTextureWrapMode.Repeat
+                }
+            };
 
-            NbTexture out_tex_normal = GraphicsAPI.CreateTexture(PixelInternalFormat.Rgba8, texWidth, texHeight, PixelFormat.Rgba, PixelType.UnsignedByte, true);
+            GraphicsAPI.GenerateTexture(out_tex_normal);
             GraphicsAPI.setupTextureParameters(out_tex_normal, NbTextureWrapMode.Repeat,
                 NbTextureFilter.Linear, NbTextureFilter.LinearMipmapLinear, 4.0f);
-            
-            //Copy the read buffers to the 
 
-            GL.BindTexture(TextureTarget.Texture2D, out_tex_normal.texID);
-            GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
-            GL.CopyTexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, 0, 0, texWidth, texHeight);
-            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+            renderSystem.Renderer.CopyFrameBufferChannelToTexture(NbFBOAttachment.Attachment0, out_tex_normal);
 
 #if (DUMP_TEXTURES)
             GL.ReadBuffer(ReadBufferMode.ColorAttachment0);

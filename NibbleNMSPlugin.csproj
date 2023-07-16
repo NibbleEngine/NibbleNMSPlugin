@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
 	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
@@ -10,11 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Gameloop.Vdf" Version="0.6.1" />
+    <PackageReference Include="Gameloop.Vdf" Version="0.6.2" />
+    <PackageReference Include="ImGui.NET" Version="1.89.6" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="OpenTK.Graphics" Version="4.7.1" />
-    <PackageReference Include="OpenTK.Mathematics" Version="4.7.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,24 +22,27 @@
   </ItemGroup>
 
   <ItemGroup>
-	<Reference Include="Nibble">
-	  <HintPath>lib\Nibble.dll</HintPath>
-	</Reference>
-    <Reference Include="ImGui.NET">
-      <HintPath>lib\ImGui.NET.dll</HintPath>
-    </Reference>
-    <Reference Include="libMBIN">
+	<Reference Include="libMBIN">
       <HintPath>lib\libMBIN.dll</HintPath>
     </Reference>
     <Reference Include="libPSARC">
       <HintPath>lib\libPSARC.dll</HintPath>
     </Reference>
+	  <Reference Include="Nibble">
+		  <HintPath>lib\Nibble.dll</HintPath>
+	  </Reference>
   </ItemGroup>
 
 	
   <Target Name="CopyCustomContent" AfterTargets="Build">
     <Message Text="Hooya $(TargetPath)" Importance="high" />
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(SolutionDir)Build\Plugins" />
+	<Copy SourceFiles="Shaders/texture_mixer_VS.glsl" DestinationFolder="..\NibbleEditor\Build\OPENGL_DEBUG\$(TargetFramework)\$(RuntimeIdentifier)\Assets\Shaders\Source" />
+	  <Copy SourceFiles="Shaders/texture_mixer_FS.glsl" DestinationFolder="..\NibbleEditor\Build\OPENGL_DEBUG\$(TargetFramework)\$(RuntimeIdentifier)\Assets\Shaders\Source" />
+    <Copy SourceFiles="$(TargetDir)libMBIN.dll" DestinationFolder="..\NibbleEditor\Build\OPENGL_DEBUG\$(TargetFramework)\$(RuntimeIdentifier)\Plugins" />
+	<Copy SourceFiles="$(TargetDir)libPSARC.dll" DestinationFolder="..\NibbleEditor\Build\OPENGL_DEBUG\$(TargetFramework)\$(RuntimeIdentifier)\Plugins" />
+	  <Copy SourceFiles="$(TargetDir)zlib.net.dll" DestinationFolder="..\NibbleEditor\Build\OPENGL_DEBUG\$(TargetFramework)\$(RuntimeIdentifier)\Plugins" />
+	  <Copy SourceFiles="$(TargetDir)NibbleNMSPlugin.dll" DestinationFolder="..\NibbleEditor\Build\OPENGL_DEBUG\$(TargetFramework)\$(RuntimeIdentifier)\Plugins" />
+	<Message Text="Files copied successfully. $(Configuration)" Importance="high" />
   </Target>
 
 </Project>

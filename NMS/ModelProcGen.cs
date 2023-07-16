@@ -5,8 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Diagnostics;
-using OpenTK;
-using OpenTK.Graphics.OpenGL4;
 using System.Reflection;
 using System.IO;
 using libMBIN.NMS.Toolkit;
