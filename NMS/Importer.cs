@@ -318,23 +318,23 @@ namespace NibbleNMSPlugin
                 switch (sam.Name)
                 {
                     case "gDiffuseMap":
-                        Util.loadSamplerTexture(split[0] + ".DDS", sam, texMgr);
+                        Util.loadSamplerTexture(split[0] + ".DDS", sam, texMgr, ms);
                         break;
                     case "gNormalMap":
-                        Util.loadSamplerTexture(split[0] + ".NORMAL.DDS", sam, texMgr);
+                        Util.loadSamplerTexture(split[0] + ".NORMAL.DDS", sam, texMgr, ms);
                         break;
                     case "gMasksMap":
-                        Util.loadSamplerTexture(split[0] + ".MASKS.DDS", sam, texMgr);
+                        Util.loadSamplerTexture(split[0] + ".MASKS.DDS", sam, texMgr, ms);
                         break;
                     default:
-                        Util.loadSamplerTexture(ms.Map.Value, sam, texMgr);
+                        Util.loadSamplerTexture(ms.Map.Value, sam, texMgr, ms);
                         break;
                 }
                 
             } else
             {
                 //Load the designated texture to the sampler
-                Util.loadSamplerTexture(ms.Map.Value, sam, texMgr);
+                Util.loadSamplerTexture(ms.Map.Value, sam, texMgr, ms);
             }
             
             return sam;
@@ -358,6 +358,9 @@ namespace NibbleNMSPlugin
                 Name = md.Name,
                 Class = NbMaterialClass.Default
             };
+
+            if (md.Name == "Primary1")
+                Console.WriteLine("DEBUG");
 
             //TODO: Check if we need to support all the game material classes
             

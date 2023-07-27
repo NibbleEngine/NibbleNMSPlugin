@@ -8,6 +8,7 @@ using NbCore.Plugins;
 using ImGuiNET;
 using Newtonsoft.Json;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace NibbleNMSPlugin
 {
@@ -182,10 +183,67 @@ namespace NibbleNMSPlugin
 
             }
         }
+        
+        private void SelectProcGenParts(SceneGraphNode node, ref List<string> partList)
+        {
+            //Identify procgen children
+            HashSet<string> avail_selections = new();
+
+            foreach (SceneGraphNode c in node.Children)
+            {
+                if (c.Name.StartsWith('_'))
+                    avail_selections.Add(c.Name.Split('_')[1]);
+            }
+
+            
+
+            //Process Parts
+            foreach (string sel in avail_selections)
+            {
+                List<SceneGraphNode> avail_parts = new();
+                foreach (SceneGraphNode c in node.Children)
+                {
+                    if (c.Name.StartsWith('_' + sel + '_'))
+                        avail_parts.Add(c);
+                }
+
+                //Shuffle list of parts
+                avail_parts = avail_parts.OrderBy(x => PluginState.Randgen.Next()).ToList();
+
+                //Select the first one
+                avail_parts[0].SetRenderableStatusRec(true);
+                partList.Add(avail_parts[0].Name);
+                
+                for (int i = 1; i < avail_parts.Count; i++)
+                    avail_parts[i].SetRenderableStatusRec(false);
+
+                SelectProcGenParts(avail_parts[0], ref partList);
+            }
+
+            //Iterate in non procgen children
+            foreach (SceneGraphNode child in node.Children)
+                if (!child.Name.StartsWith('_'))
+                    SelectProcGenParts(child, ref partList);
+        }
 
         public void ProcGen(object ob)
         {
+            Log($"ProcGen Func", LogVerbosityLevel.INFO);
 
+            SceneGraph graph = RenderState.engineRef.GetActiveSceneGraph();
+
+            List<string> selected_procParts = new();
+
+            //Make Selection
+            SelectProcGenParts(graph.Root, ref selected_procParts);
+
+            string partIds = "";
+            for (int i = 0; i < selected_procParts.Count; i++)
+                partIds += selected_procParts[i] + ' ';
+            selected_procParts.Clear();
+
+            Log($"Proc Parts: {partIds}\n", LogVerbosityLevel.INFO);
+            
         }
 
 
@@ -272,10 +330,10 @@ namespace NibbleNMSPlugin
         {
             Assembly currentAssembly = Assembly.GetExecutingAssembly();
             NbTexture tex = EngineRef.CreateTexture(Callbacks.getResourceFromAssembly(currentAssembly, "default.dds"), "default.dds", 
-                NbTextureWrapMode.Repeat, NbTextureFilter.Linear, NbTextureFilter.Linear);
+                NbTextureWrapMode.Repeat, NbTextureFilter.Linear, NbTextureFilter.Linear, false);
             EngineRef.RegisterEntity(tex);
             tex = EngineRef.CreateTexture(Callbacks.getResourceFromAssembly(currentAssembly, "default_mask.dds"), "default_mask.dds",
-                NbTextureWrapMode.Repeat, NbTextureFilter.Linear, NbTextureFilter.Linear);
+                NbTextureWrapMode.Repeat, NbTextureFilter.Linear, NbTextureFilter.Linear, false);
             EngineRef.RegisterEntity(tex);
         }
         

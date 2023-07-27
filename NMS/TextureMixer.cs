@@ -91,15 +91,23 @@ namespace NibbleNMSPlugin
             renderer.DeleteFrameBuffer(mix_fbo);
             GraphicsAPI.SetViewPortSize(0, 0, old_vp_size[2], old_vp_size[3]);
             mix_fbo.Dispose();
-            renderer.DeleteFrameBuffer(mix_fbo);
             
             //Delete Framebuffer Texture
             fbo_tex.Dispose();
             
             //Add the new procedural textures to the textureManager
+            if (texMgr.Contains(diffTex.Path))
+                texMgr.Remove(diffTex.Path);
             texMgr.Add(diffTex.Path, diffTex);
+
+            if (texMgr.Contains(maskTex.Path))
+                texMgr.Remove(maskTex.Path);
             texMgr.Add(maskTex.Path, maskTex);
+
+            if (texMgr.Contains(normalTex.Path))
+                texMgr.Remove(normalTex.Path);
             texMgr.Add(normalTex.Path, normalTex);
+
         }
 
         //Generate procedural textures
@@ -307,6 +315,7 @@ namespace NibbleNMSPlugin
             };
             
             GraphicsAPI.GenerateTexture(fbo_tex);
+            
             GraphicsAPI.setupTextureParameters(fbo_tex, NbTextureWrapMode.Repeat,
                 NbTextureFilter.Linear, NbTextureFilter.LinearMipmapNearest, 4.0f);
 
@@ -320,7 +329,6 @@ namespace NibbleNMSPlugin
             renderer.AddFrameBufferAttachment(fbo, fbo_tex, NbFBOAttachment.Attachment0);
 
             //Bind the FBO and activate it
-            GraphicsAPI.BindFrameBuffer(fbo);
             renderer.ActivateFrameBuffer(fbo);
 
             return true;
@@ -398,6 +406,7 @@ namespace NibbleNMSPlugin
             {
                 Data = new()
                 {
+                    target = NbTextureTarget.Texture2D,
                     Width = texWidth,
                     Height = texHeight,
                     pif = NbTextureInternalFormat.RGBA8,
@@ -408,6 +417,9 @@ namespace NibbleNMSPlugin
             };
                 
             GraphicsAPI.GenerateTexture(out_tex_diffuse);
+            if (out_tex_diffuse.texID == 20)
+                Console.WriteLine("asdasdasd");
+            GraphicsAPI.UploadTexture(out_tex_diffuse);
             GraphicsAPI.setupTextureParameters(out_tex_diffuse, NbTextureWrapMode.Repeat,
                 NbTextureFilter.Linear, NbTextureFilter.LinearMipmapLinear, 4.0f);
 
@@ -516,6 +528,7 @@ namespace NibbleNMSPlugin
             {
                 Data = new()
                 {
+                    target = NbTextureTarget.Texture2D,
                     Width = texWidth,
                     Height = texHeight,
                     pif = NbTextureInternalFormat.RGBA8,
@@ -526,6 +539,7 @@ namespace NibbleNMSPlugin
             };
 
             GraphicsAPI.GenerateTexture(out_tex_mask);
+            GraphicsAPI.UploadTexture(out_tex_mask);
             GraphicsAPI.setupTextureParameters(out_tex_mask, NbTextureWrapMode.Repeat,
                 NbTextureFilter.Linear, NbTextureFilter.LinearMipmapLinear, 4.0f);
 
@@ -635,6 +649,7 @@ namespace NibbleNMSPlugin
             {
                 Data = new()
                 {
+                    target = NbTextureTarget.Texture2D,
                     Width = texWidth,
                     Height = texHeight,
                     pif = NbTextureInternalFormat.RGBA8,
@@ -645,6 +660,7 @@ namespace NibbleNMSPlugin
             };
 
             GraphicsAPI.GenerateTexture(out_tex_normal);
+            GraphicsAPI.UploadTexture(out_tex_normal);
             GraphicsAPI.setupTextureParameters(out_tex_normal, NbTextureWrapMode.Repeat,
                 NbTextureFilter.Linear, NbTextureFilter.LinearMipmapLinear, 4.0f);
 

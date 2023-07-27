@@ -3,6 +3,7 @@ using System.IO;
 using NbCore.Math;
 using libMBIN.NMS.Toolkit;
 using NbCore;
+using System.Net.Http.Headers;
 
 namespace NibbleNMSPlugin
 {
@@ -114,7 +115,6 @@ namespace NibbleNMSPlugin
 
 
         //Texture Utilities
-
         public static NbTexture LoadNMSTexture(string path)
         {
             Stream s = FileUtils.LoadNMSFileStream(path);
@@ -123,11 +123,69 @@ namespace NibbleNMSPlugin
             byte[] data = new byte[s.Length];
             s.Read(data, 0, data.Length);
             s.Close();
-            return PluginState.PluginRef.EngineRef.CreateTexture(data, path, 
-                NbTextureWrapMode.Repeat, NbTextureFilter.LinearMipmapLinear, NbTextureFilter.Linear, false);
+
+            //Identify texture properties
+            bool gamma_correct = false;
+            NbTextureWrapMode wrapMode = NbTextureWrapMode.Repeat;
+            NbTextureFilter minFilter = NbTextureFilter.Nearest;
+            NbTextureFilter magFilter = NbTextureFilter.Nearest;
+
+            return PluginState.PluginRef.EngineRef.CreateTexture(data, path,
+                wrapMode, minFilter, magFilter, gamma_correct);
         }
 
-        public static void loadSamplerTexture(string texpath, NbSampler sampler, TextureManager texMgr)
+        public static NbTexture LoadNMSTexture(string path, TkMaterialSampler ms)
+        {
+            Stream s = FileUtils.LoadNMSFileStream(path);
+            if (s is null)
+                return null;
+            byte[] data = new byte[s.Length];
+            s.Read(data, 0, data.Length);
+            s.Close();
+
+            //Identify texture properties
+            bool gamma_correct = ms.IsSRGB;
+            NbTextureWrapMode wrapMode = NbTextureWrapMode.Repeat;
+            NbTextureFilter minFilter = NbTextureFilter.Linear;
+            NbTextureFilter magFilter = NbTextureFilter.Linear;
+
+            switch (ms.TextureAddressMode)
+            {
+                case TkMaterialSampler.TextureAddressModeEnum.Wrap:
+                    wrapMode = NbTextureWrapMode.Repeat;
+                    break;
+                case TkMaterialSampler.TextureAddressModeEnum.Mirror:
+                    wrapMode = NbTextureWrapMode.MirroredRepeat;
+                    break;
+                case TkMaterialSampler.TextureAddressModeEnum.ClampToBorder:
+                    wrapMode = NbTextureWrapMode.ClampToBorder;
+                    break;
+                case TkMaterialSampler.TextureAddressModeEnum.Clamp:
+                    wrapMode = NbTextureWrapMode.ClampToEdge;
+                    break;
+            }
+
+            switch (ms.TextureFilterMode)
+            {
+                case TkMaterialSampler.TextureFilterModeEnum.Bilinear:
+                    minFilter = NbTextureFilter.Linear;
+                    magFilter = NbTextureFilter.Linear;
+                    break;
+                case TkMaterialSampler.TextureFilterModeEnum.Trilinear:
+                    minFilter = NbTextureFilter.LinearMipmapLinear;
+                    magFilter = NbTextureFilter.Linear;
+                    break;
+                case TkMaterialSampler.TextureFilterModeEnum.None:
+                    minFilter = NbTextureFilter.Nearest;
+                    magFilter = NbTextureFilter.Nearest;
+                    break;
+            }
+            
+            return PluginState.PluginRef.EngineRef.CreateTexture(data, path, 
+                wrapMode, minFilter, magFilter, gamma_correct);
+        }
+
+        public static void loadSamplerTexture(string texpath, NbSampler sampler, TextureManager texMgr, TkMaterialSampler ms)
         {
             if (texpath == "")
                 return;
@@ -140,7 +198,7 @@ namespace NibbleNMSPlugin
             }
             else
             {
-                tex = LoadNMSTexture(texpath);
+                tex = LoadNMSTexture(texpath, ms);
                 if (tex is null)
                 {
                     //Reset shader binding if no texture is loaded
@@ -153,7 +211,7 @@ namespace NibbleNMSPlugin
 
             //Set Sampler Properties
             sampler.Texture = tex;
+            tex.Refs += 1; //Keep Ref
         }
-
     }
 }
