@@ -1185,18 +1185,15 @@ namespace NibbleNMSPlugin
                 NbShaderSource conf_fs = RenderState.engineRef.GetShaderSourceByFilePath("Assets/Shaders/Source/ubershader_fs.glsl");
                 NbShaderMode conf_mode = NbShaderMode.DEFFERED;
 
-
                 if ((nms_mat != null &&
                     null != nms_mat.Flags.Find(x => x.MaterialFlag == TkMaterialFlags.MaterialFlagEnum._F02_SKINNED)) || 
                     (mmd.LastSkinMat - mmd.FirstSkinMat > 0))
                     conf_mode |= NbShaderMode.SKINNED;
 
                 if ((nms_mat != null &&
-                    null == nms_mat.Flags.Find(x => x.MaterialFlag == TkMaterialFlags.MaterialFlagEnum._F07_UNLIT)) ||
-                    (mmd.LastSkinMat - mmd.FirstSkinMat > 0))
+                    null == nms_mat.Flags.Find(x => x.MaterialFlag == TkMaterialFlags.MaterialFlagEnum._F07_UNLIT)))
                     conf_mode |= NbShaderMode.LIT;
 
-                
                 ulong conf_hash = NbShaderConfig.GetHash(conf_vs, conf_fs, null, null, null, conf_mode);
 
                 NbShaderConfig conf = EngineRef.GetShaderConfigByHash(conf_hash);

@@ -207,6 +207,9 @@ namespace NibbleNMSPlugin
                         avail_parts.Add(c);
                 }
 
+                if (avail_parts.Count == 0)
+                    continue;
+                
                 //Shuffle list of parts
                 avail_parts = avail_parts.OrderBy(x => PluginState.Randgen.Next()).ToList();
 
