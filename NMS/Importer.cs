@@ -434,7 +434,7 @@ namespace NibbleNMSPlugin
         
         private static NbMeshBufferInfo get_bufInfo_item(int buf_id, int offset, int stride, int count, int buf_type)
         {
-            int sem = buf_id;
+            NbBufferSemantic sem = (NbBufferSemantic) buf_id;
             int off = offset;
             NbPrimitiveDataType typ = get_type(buf_type);
             string text = get_shader_sem(buf_id);
@@ -510,25 +510,25 @@ namespace NibbleNMSPlugin
             {
                 switch (lBufInfo[i].semantic)
                 {
-                    case 0:
+                    case NbBufferSemantic.VERTEX:
                         mesh_desc += "v"; //Verts
                         break;
-                    case 1:
+                    case NbBufferSemantic.UV:
                         mesh_desc += "u"; //UVs
                         break;
-                    case 2:
+                    case NbBufferSemantic.NORMAL:
                         mesh_desc += "n"; //Normals
                         break;
-                    case 3:
+                    case NbBufferSemantic.TANGENT:
                         mesh_desc += "t"; //Tangents
                         break;
-                    case 4:
+                    case NbBufferSemantic.BITANGENT:
                         mesh_desc += "p"; //Vertex Color
                         break;
-                    case 5:
+                    case NbBufferSemantic.BLENDINDICES:
                         mesh_desc += "b"; //BlendIndices
                         break;
-                    case 6:
+                    case NbBufferSemantic.BLENDWEIGHTS:
                         mesh_desc += "w"; //BlendWeights
                         break;
                     default:
