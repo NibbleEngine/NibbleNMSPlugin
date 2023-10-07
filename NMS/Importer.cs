@@ -501,46 +501,6 @@ namespace NibbleNMSPlugin
             }
         }
 
-        private static string getDescr(List<NbMeshBufferInfo> lBufInfo)
-        {
-            string mesh_desc = "";
-
-
-            for (int i = 0; i < lBufInfo.Count; i++)
-            {
-                switch (lBufInfo[i].semantic)
-                {
-                    case NbBufferSemantic.VERTEX:
-                        mesh_desc += "v"; //Verts
-                        break;
-                    case NbBufferSemantic.UV:
-                        mesh_desc += "u"; //UVs
-                        break;
-                    case NbBufferSemantic.NORMAL:
-                        mesh_desc += "n"; //Normals
-                        break;
-                    case NbBufferSemantic.TANGENT:
-                        mesh_desc += "t"; //Tangents
-                        break;
-                    case NbBufferSemantic.BITANGENT:
-                        mesh_desc += "p"; //Vertex Color
-                        break;
-                    case NbBufferSemantic.BLENDINDICES:
-                        mesh_desc += "b"; //BlendIndices
-                        break;
-                    case NbBufferSemantic.BLENDWEIGHTS:
-                        mesh_desc += "w"; //BlendWeights
-                        break;
-                    default:
-                        mesh_desc += "x"; //Default
-                        break;
-                }
-                
-            }
-
-            return mesh_desc;
-        }
-
         private static JointBindingData LoadJointBindingData(ref Stream fs)
         {
             JointBindingData jbd = new();
@@ -587,6 +547,8 @@ namespace NibbleNMSPlugin
             jbd.BindMatrix = NbMatrix4.CreateScale(BindScale) *
                          NbMatrix4.CreateFromQuaternion(BindRotation) *
                          NbMatrix4.CreateTranslation(BindTranslate);
+            
+            jbd.BindMatrix = jbd.invBindMatrix.Inverted(); //Recalculate matrix from the invertex Bind Matrix (more consistent)
 
             //Check Results [Except from Joint 0, the determinant of the multiplication is always 1,
             // transforms should be good]
@@ -829,15 +791,8 @@ namespace NibbleNMSPlugin
                 fs.Seek(0x10, SeekOrigin.Current);
             }
 
-            //Get Descr
-            mesh_desc = getDescr(geom.bufInfo);
-            PluginState.PluginRef.Log("Mesh Description: " + mesh_desc, LogVerbosityLevel.INFO);
-
-            //Store description
-            geom.mesh_descr = mesh_desc;
             //Get small description
             fs.Seek(small_mesh_descr_offset, SeekOrigin.Begin);
-            var small_mesh_desc = "";
             //int[] mesh_offsets = new int[buf_count];
             
             for (int i = 0; i < small_bufcount; i++)
@@ -853,12 +808,6 @@ namespace NibbleNMSPlugin
                 fs.Seek(0x10, SeekOrigin.Current);
             }
 
-            //Get Small Descr
-            small_mesh_desc = getDescr(geom.smallBufInfo);
-            PluginState.PluginRef.Log("Small Mesh Description: " + small_mesh_desc, LogVerbosityLevel.INFO);
-
-            //Store description
-            geom.small_mesh_descr = small_mesh_desc;
             //Set geom interleaved
             geom.interleaved = true;
 
@@ -887,9 +836,10 @@ namespace NibbleNMSPlugin
                 //Calculate vertex count on stream
                 uint vx_count = mmd.vs_size / geom.vx_size;
 
-                md.IndicesLength = NbPrimitiveDataType.UnsignedShort;
+                md.IndicesType = NbRenderPrimitive.Triangles;
+                md.IndexFormat = NbPrimitiveDataType.UnsignedShort;
                 if (vx_count > 0xFFFF)
-                    md.IndicesLength = NbPrimitiveDataType.UnsignedInt;
+                    md.IndexFormat = NbPrimitiveDataType.UnsignedInt;
 
                 geom.meshDataDict[mmd.hash] = md;
             }
@@ -1459,7 +1409,7 @@ namespace NibbleNMSPlugin
 
                 //Add Collision component to node
                 so.AddComponent<CollisionComponent>(cc);
-
+            
             }
             else if (typeEnum == SceneNodeType.LIGHT)
             {
@@ -1472,7 +1422,7 @@ namespace NibbleNMSPlugin
                 float color_g = float.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "COL_G"));
                 float color_b = float.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "COL_B"));
                 float volumetric = float.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "VOLUMETRIC"));
-
+                
                 //Add Mesh Component
                 NbCore.Primitives.LineSegment ls = new NbCore.Primitives.LineSegment(2, new NbVector3(1.0f, 0.0f, 0.0f));
                 MeshComponent mc = new()
@@ -1497,7 +1447,8 @@ namespace NibbleNMSPlugin
                     Data = new()
                     {
                         Intensity = intensity,
-                        FOV = fov,
+                        InnerCutOff = (float) Math.Cos(0.5 * fov),
+                        OutterCutOff = (float) Math.Cos(0.5 * fov),
                         IsRenderable = true,
                         Falloff = (ATTENUATION_TYPE)Enum.Parse(typeof(ATTENUATION_TYPE), falloff.ToUpper()),
                         Color = new NbVector3(color_r, color_g, color_b),
