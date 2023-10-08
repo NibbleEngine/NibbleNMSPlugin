@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System;
 using System.Reflection;
 using System.Globalization;
-using NbCore.Math;
 using libMBIN;
 using libMBIN.NMS.Toolkit;
 using System.Linq;
@@ -1011,9 +1010,9 @@ namespace NibbleNMSPlugin
             //test_q_angles.Z = MathUtils.degrees(test_q_angles.Z);
 
             //Engine way
-            NbQuaternion engine_q = NbQuaternion.FromEulerAngles(MathUtils.radians(node.Transform.RotX),
-                                                                 MathUtils.radians(node.Transform.RotY),
-                                                                 MathUtils.radians(node.Transform.RotZ), "YXZ");
+            NbQuaternion engine_q = NbQuaternion.FromEulerAngles(NbCore.Math.Radians(node.Transform.RotX),
+                                                                 NbCore.Math.Radians(node.Transform.RotY),
+                                                                 NbCore.Math.Radians(node.Transform.RotZ), "YXZ");
 
             //Transform rotations to XYZ mode
             NbVector3 rotations = NbQuaternion.ToEulerAngles(engine_q);
@@ -1025,9 +1024,9 @@ namespace NibbleNMSPlugin
                 TransX = node.Transform.TransX,
                 TransY = node.Transform.TransY,
                 TransZ = node.Transform.TransZ,
-                RotX = MathUtils.degrees(rotations.X),
-                RotY = MathUtils.degrees(rotations.Y),
-                RotZ = MathUtils.degrees(rotations.Z),
+                RotX = NbCore.Math.Degrees(rotations.X),
+                RotY = NbCore.Math.Degrees(rotations.Y),
+                RotZ = NbCore.Math.Degrees(rotations.Z),
                 ScaleX = node.Transform.ScaleX,
                 ScaleY = node.Transform.ScaleY,
                 ScaleZ = node.Transform.ScaleZ
@@ -1076,12 +1075,12 @@ namespace NibbleNMSPlugin
                     LODLevel = int.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "LODLEVEL")),
                     BoundHullStart = int.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "BOUNDHULLST")),
                     BoundHullEnd = int.Parse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "BOUNDHULLED")),
-                    AABBMIN = new NbVector3(MathUtils.FloatParse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "AABBMINX")),
-                                          MathUtils.FloatParse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "AABBMINY")),
-                                          MathUtils.FloatParse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "AABBMINZ"))),
-                    AABBMAX = new NbVector3(MathUtils.FloatParse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "AABBMAXX")),
-                                          MathUtils.FloatParse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "AABBMAXY")),
-                                          MathUtils.FloatParse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "AABBMAXZ"))),
+                    AABBMIN = new NbVector3(NbCore.Math.FloatParse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "AABBMINX")),
+                                          NbCore.Math.FloatParse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "AABBMINY")),
+                                          NbCore.Math.FloatParse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "AABBMINZ"))),
+                    AABBMAX = new NbVector3(NbCore.Math.FloatParse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "AABBMAXX")),
+                                          NbCore.Math.FloatParse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "AABBMAXY")),
+                                          NbCore.Math.FloatParse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "AABBMAXZ"))),
                     
                 };
 
@@ -1204,7 +1203,7 @@ namespace NibbleNMSPlugin
                 //Fetch extra LOD attributes
                 for (int i = 1; i < sc.NumLods; i++)
                 {
-                    float attr_val = MathUtils.FloatParse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "LODDIST" + i));
+                    float attr_val = NbCore.Math.FloatParse(FileUtils.parseNMSTemplateAttrib(node.Attributes, "LODDIST" + i));
                     sc.LODDistances.Add(attr_val);
                 }
 
@@ -1447,8 +1446,8 @@ namespace NibbleNMSPlugin
                     Data = new()
                     {
                         Intensity = intensity,
-                        InnerCutOff = (float) Math.Cos(0.5 * fov),
-                        OutterCutOff = (float) Math.Cos(0.5 * fov),
+                        InnerCutOff = (float) System.Math.Cos(0.5 * fov),
+                        OutterCutOff = (float)System.Math.Cos(0.5 * fov),
                         IsRenderable = true,
                         Falloff = (ATTENUATION_TYPE)Enum.Parse(typeof(ATTENUATION_TYPE), falloff.ToUpper()),
                         Color = new NbVector3(color_r, color_g, color_b),

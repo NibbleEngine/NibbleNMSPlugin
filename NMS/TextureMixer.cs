@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using NbCore.Math;
 using NbCore.Platform.Graphics;
 using NbCore;
 using NbCore.Common;
